@@ -1,0 +1,11 @@
+# vscode related
+.vscode
+.vs
+backend/.vscode
+backend/.vs
+frontend/.vscode
+frontend/.vs
+
+
+# compiled files
+backend/bin
