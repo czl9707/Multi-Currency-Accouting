@@ -9,3 +9,4 @@ frontend/.vs
 
 # compiled files
 backend/bin
+backend/obj
