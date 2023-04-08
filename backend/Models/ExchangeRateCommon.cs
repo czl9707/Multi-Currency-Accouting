@@ -36,13 +36,13 @@ public class ExchangeRateCommon {
         ";
 
 
-    public async Task<CurrencyExchangeRate?> GetExchangeRateAsync(string base_cur, string target_cur, DateTime exchange_utc)
+    public async Task<CurrencyExchangeRate?> GetExchangeRateAsync(CurrencyExchangeRate rateSetup)
     {
-        var rate = await this.GetExchangeRateFromDBAsync(base_cur, target_cur, exchange_utc).ConfigureAwait(false);
+        var rate = await this.GetExchangeRateFromDBAsync(rateSetup).ConfigureAwait(false);
         if (rate != null) return rate;
         
         try{
-            rate = await GrabExchangeRateAsync(base_cur, target_cur, exchange_utc).ConfigureAwait(false);
+            rate = await GrabExchangeRateAsync(rateSetup).ConfigureAwait(false);
         }catch (NullReferenceException) {
             // log error
             return null;
@@ -53,16 +53,16 @@ public class ExchangeRateCommon {
         return rate;
     }
 
-    private async Task<CurrencyExchangeRate?> GetExchangeRateFromDBAsync(string base_cur, string target_cur, DateTime exchange_utc)
+    private async Task<CurrencyExchangeRate?> GetExchangeRateFromDBAsync(CurrencyExchangeRate rateSetup)
     {
         using var connection = this.DbConnectionFactory.GetConnection();
         var rates = await this.DapperWrapperService.QueryAsync<CurrencyExchangeRate>(
             connection: connection,
             sql: sqlSelectSingleRate,
             param: new {
-                vbase_cur = base_cur,
-                vtarget_cur = target_cur,
-                vexchange_utc = exchange_utc
+                vbase_cur = rateSetup.BaseCur,
+                vtarget_cur = rateSetup.TargetCur,
+                vexchange_utc = rateSetup.ExchangeUtc
             }
         ).ConfigureAwait(false);
 
@@ -85,16 +85,16 @@ public class ExchangeRateCommon {
         );
     }
 
-    private static async Task<CurrencyExchangeRate> GrabExchangeRateAsync(string base_cur, string target_cur, DateTime exchange_utc)
+    private static async Task<CurrencyExchangeRate> GrabExchangeRateAsync(CurrencyExchangeRate rateSetup)
     {
         var client = new HttpClient();
         // transfer to format 2020-10-21
-        var dateString = exchange_utc.ToString("yyyy-MM-dd");
+        var dateString = rateSetup.ExchangeRate.ToString("yyyy-MM-dd");
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
             RequestUri = new Uri(
-                $"https://currency-conversion-and-exchange-rates.p.rapidapi.com/{dateString}?base={base_cur}&quotes={target_cur}"            
+                $"https://currency-conversion-and-exchange-rates.p.rapidapi.com/{dateString}?base={rateSetup.BaseCur}&quotes={rateSetup.TargetCur}"
             ),
             Headers = {
                 { "X-RapidAPI-Key", "89dfb95b7cmsh5a31dc13a7b4da0p1cd15cjsn94b25d25bea2" },
@@ -106,23 +106,24 @@ public class ExchangeRateCommon {
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-        return GenerateExchangeRateFromJson(body, base_cur, target_cur, exchange_utc);
+        return GenerateExchangeRateFromJson(body, rateSetup);
     }
 
-    private static CurrencyExchangeRate GenerateExchangeRateFromJson(string responseBody, string base_cur, string target_cur, DateTime exchange_utc)
+    private static CurrencyExchangeRate GenerateExchangeRateFromJson(string responseBody, CurrencyExchangeRate rateSetup)
     {
         var jobj = JObject.Parse(responseBody);
         JObject? rates = (JObject?)jobj["rates"];
-        if (rates == null || !rates.ContainsKey(target_cur))
+        if (rates == null || !rates.ContainsKey(rateSetup.TargetCur))
             throw new NullReferenceException(
-                $"Remote response do not contain rate from {base_cur} to {target_cur}."
+                $"Remote response do not contain rate from {rateSetup.BaseCur} to {rateSetup.TargetCur}."
             );
 
         float rate = -1;
-        if (rates != null && rates.ContainsKey(target_cur)){
-            rate = (float)rates[target_cur];
+        if (rates != null && rates.ContainsKey(rateSetup.TargetCur)){
+            rate = (float)rates[rateSetup.TargetCur];
         }
 
-        return new CurrencyExchangeRate(base_cur, target_cur, exchange_utc, rate);
+        rateSetup.ExchangeRate = rate;
+        return rateSetup;
     }
 }

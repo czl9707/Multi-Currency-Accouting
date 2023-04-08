@@ -1,45 +1,33 @@
 namespace Accountant.Models;
 
-public abstract class CashFlowType
+public abstract class CashFlowType<T>
+where T : CashFlow
 {
-    protected CashFlowType(){
-        this.TypeId = 0;
+    protected CashFlowType()
+    {
         this.TypeName = "";
+        this.TypeId = -1;
     }
 
-    protected CashFlowType (
-        long typeId,
-        string typeName
-    ){
-        this.TypeId = typeId;
+    protected CashFlowType (string typeName)
+    {
         this.TypeName = typeName;
+        this.TypeId = -1;
     }
 
-    internal long TypeId {get; private set;}
-    internal string TypeName {get; set;}
+    public long TypeId {get; set;}
+    public string TypeName {get; set;}
 }
 
-public class IncomeType : CashFlowType
+public class IncomeType : CashFlowType<Income>
 {
     public IncomeType (): base(){}
-    public IncomeType (
-        long typeId,
-        string typeName
-    ): base(
-        typeId,
-        typeName
-    ){}
+    public IncomeType (string typeName): base(typeName){}
 }
 
-public class ExpenseType : CashFlowType
+public class ExpenseType : CashFlowType<Expense>
 {
     public ExpenseType (): base(){}
+    public ExpenseType (string typeName): base(typeName){}
 
-    public ExpenseType (
-        long typeId,
-        string typeName
-    ): base(
-        typeId,
-        typeName
-    ){}
 }

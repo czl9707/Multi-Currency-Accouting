@@ -4,7 +4,7 @@ using System.Data;
 using Accountant.Services.DB;
 
 public abstract class CashFlowTypeCommon<T>
-where T: CashFlowType
+where T: CashFlow
 {
     private IDBConnectionFactory DBConnectionFactory;
     private IDapperWrapperService DapperWrapperService;
@@ -45,12 +45,12 @@ where T: CashFlowType
         ";
     }
 
-    private Dictionary<long, T>? Types {get; set;}
+    private Dictionary<long, CashFlowType<T>>? Types {get; set;}
 
-    public async Task<Dictionary<long, T>> GetAllTypesAsync(){
+    public async Task<Dictionary<long, CashFlowType<T>>> GetAllTypesAsync(){
         if (this.Types is null){
             using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-            var types = await this.DapperWrapperService.QueryAsync<T>(connection, this.selectSql);
+            var types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
 
             this.Types = types.ToDictionary(
                 type => type.TypeId, type => type
@@ -60,60 +60,60 @@ where T: CashFlowType
         return this.Types;
     }
 
-    public async Task UpdateTypeAsync(long typeID, string typeName)
+    public async Task UpdateTypeAsync(CashFlowType<T> type)
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-        await this.DapperWrapperService.QueryAsync<T>(
+        await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(
             connection: connection,
             sql: this.updateSql,
             param: new {
-                vtype_id = typeID,
-                vtype_name = typeName 
+                vtype_id = type.TypeId,
+                vtype_name = type.TypeName 
             }
         );
 
-        var types = await this.DapperWrapperService.QueryAsync<T>(connection, this.selectSql);
+        var types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
         this.Types = types.ToDictionary(
             type => type.TypeId, type => type
         );
     }
 
-    public async Task AddNewTypeAsync(string typeName)
+    public async Task AddNewTypeAsync(CashFlowType<T> type)
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-        await this.DapperWrapperService.QueryAsync<T>(
+        await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(
             connection: connection,
             sql: this.insertSql,
             param: new {
-                vtype_name = typeName 
+                vtype_name = type.TypeName
             }
         );
 
-        var types = await this.DapperWrapperService.QueryAsync<T>(connection, this.selectSql);
+        var types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
         this.Types = types.ToDictionary(
             type => type.TypeId, type => type
         );
     }
 
-    public async Task DeleteTypeAsync(long typeID)
+    public async Task DeleteTypeAsync(long typeId)
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-        await this.DapperWrapperService.QueryAsync<T>(
+        await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(
             connection: connection,
             sql: this.deleteSql,
             param: new {
-                vtype_id = typeID
+                vtype_id = typeId
             }
         );
 
-        var types = await this.DapperWrapperService.QueryAsync<T>(connection, this.selectSql);
+        var types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
         this.Types = types.ToDictionary(
             type => type.TypeId, type => type
         );
     }
 }
 
-public class IncomeTypeCommon : CashFlowTypeCommon<IncomeType>
+public class IncomeTypeCommon : CashFlowTypeCommon<Income>
 {
     public IncomeTypeCommon(
         IDBConnectionFactory dBConnectionFactory,
@@ -126,7 +126,7 @@ public class IncomeTypeCommon : CashFlowTypeCommon<IncomeType>
     }
 }
 
-public class ExpenseTypeCommon : CashFlowTypeCommon<ExpenseType>
+public class ExpenseTypeCommon : CashFlowTypeCommon<Expense>
 {
     public ExpenseTypeCommon(
         IDBConnectionFactory dBConnectionFactory,

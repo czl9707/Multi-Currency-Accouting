@@ -26,6 +26,9 @@ services:
       - ./backend:/backend
       - ./db:/db:delegated
       - ./.vscode-server:/root/.vscode-server
+    ports:
+      - "127.0.0.1:7197:7197"
+      - "127.0.0.1:5245:5245"
     working_dir: /backend
     dns:
       - 8.8.8.8

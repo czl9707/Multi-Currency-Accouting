@@ -1,6 +1,7 @@
 # vscode related
 .vscode
 .vs
+.vscode-server
 backend/.vscode
 backend/.vs
 frontend/.vscode
@@ -8,5 +9,6 @@ frontend/.vs
 
 
 # compiled files
+
 backend/bin
 backend/obj

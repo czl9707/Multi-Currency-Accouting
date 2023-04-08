@@ -4,7 +4,7 @@ using Accountant.Services.DB;
 using System.Data;
 
 public abstract class CashFlowRecordCommon<T>
-where T : CashFlowRecord
+where T : CashFlow
 {
     private IDBConnectionFactory DBConnectionFactory;
     private IDapperWrapperService DapperWrapperService;
@@ -31,7 +31,7 @@ where T : CashFlowRecord
             INSERT INTO {tableName}
                 (happen_utc, last_modified_utc, amount, curr_iso, note, type_id, method_id)
             VALUES
-                (@vhappen_utc, 'now', @vamount, @vcurr_iso, @vnote, @vtype_id, @vmethod_id )
+                (@vhappen_utc, DATETIME('now'), @vamount, @vcurr_iso, @vnote, @vtype_id, @vmethod_id )
         ";
     }
     protected string selectSqlByTime {
@@ -46,7 +46,7 @@ where T : CashFlowRecord
         get => @$"
             UPDATE {tableName}
             SET happen_utc = CASE WHEN @vhappen_utc is null THEN happen_utc ELSE @vhappen_utc END,
-                last_modified_utc = 'now',
+                last_modified_utc = DATETIME('now'),
                 amount = CASE WHEN @vamount is null THEN amount ELSE @vamount END,
                 curr_iso = CASE WHEN @vcurr_iso is null THEN curr_iso ELSE @vcurr_iso END,
                 note = CASE WHEN @vnote is null THEN note ELSE @vnote END,
@@ -63,9 +63,9 @@ where T : CashFlowRecord
         ";
     }
 
-    public async Task<T?> GetRecordByIDAsync (long cashflowID){
+    public async Task<CashFlowRecord<T>?> GetRecordByIDAsync (long cashflowID){
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-        var records = await this.DapperWrapperService.QueryAsync<T>(
+        var records = await this.DapperWrapperService.QueryAsync<CashFlowRecord<T>>(
             connection: connection,
             sql: this.selectSqlById,
             param: new {vcashflow_id = cashflowID}
@@ -80,9 +80,9 @@ where T : CashFlowRecord
     }
 
     // startTime and endTime are inclusive. 
-    public async Task<List<T>> GetRecordsForTimeSpanAsync (DateTime startTime, DateTime endTime){
+    public async Task<List<CashFlowRecord<T>>> GetRecordsForTimeSpanAsync (DateTime startTime, DateTime endTime){
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-        var records = await this.DapperWrapperService.QueryAsync<T>(
+        var records = await this.DapperWrapperService.QueryAsync<CashFlowRecord<T>>(
             connection: connection,
             sql: this.selectSqlByTime,
             param: new {
@@ -94,70 +94,55 @@ where T : CashFlowRecord
         return records.ToList();
     }
 
-    public async Task UpdateRecordByIDAsync (
-        long recordID,
-        DateTime? happenUtc = null,
-        float? amount = null, 
-        string? currIso = null, 
-        string? note = null, 
-        long? typeID = null, 
-        long? methodID = null
-    )
+    public async Task UpdateRecordAsync (CashFlowRecord<T> record)
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
         await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.updateByID,
             param: new {
-                vcashflow_id = recordID,
-                vhappen_utc = happenUtc,
-                vamount = amount,
-                vcurr_iso = currIso,
-                vnote = note, 
-                vtype_id = typeID, 
-                vmethod_id = methodID
+                vcashflow_id = record.CashFlowId,
+                vhappen_utc = (DateTime?) (record.HappenUtc != DateTime.MinValue ? record.HappenUtc : null),
+                vamount = (float?) (record.Amount > 0 ? record.Amount : null),
+                vcurr_iso = (string?) (!String.IsNullOrEmpty(record.CurrIso) ? record.CurrIso : null),
+                vnote = (string?) (!String.IsNullOrEmpty(record.Note) ? record.Note : null), 
+                vtype_id = (long?) (record.TypeId >= 0 ? record.TypeId : null), 
+                vmethod_id = (long?) (record.MethodId >= 0 ? record.MethodId : null)
             }
         );
     }
 
-    public async Task AddNewRecordAsync (
-        DateTime happenUtc,
-        float amount, 
-        string currIso, 
-        long typeID, 
-        long methodID,
-        string? note = "" 
-    )
+    public async Task AddNewRecordAsync (CashFlowRecord<T> record)
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
         await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.insertSql,
             param: new {
-                vhappen_utc = happenUtc,
-                vamount = amount,
-                vcurr_iso = currIso,
-                vnote = note, 
-                vtype_id = typeID, 
-                vmethod_id = methodID
+                vhappen_utc = record.HappenUtc,
+                vamount = record.Amount,
+                vcurr_iso = record.CurrIso,
+                vnote = record.Note, 
+                vtype_id = record.TypeId, 
+                vmethod_id = record.MethodId
             }
         );
     }
 
-    public async Task RemoveRecordByIDAsync (long recordID)
+    public async Task RemoveRecordAsync (long cashflowID)
     {
         using IDbConnection connection = this.DBConnectionFactory.GetConnection();
         await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.removeByID,
             param: new {
-                vcashflow_id = recordID
+                vcashflow_id = cashflowID
             }
         );
     }
 }
 
-public class IncomeRecordCommon: CashFlowRecordCommon<IncomeRecord>
+public class IncomeRecordCommon: CashFlowRecordCommon<Income>
 {
     public IncomeRecordCommon(
         IDBConnectionFactory dBConnectionFactory,
@@ -170,7 +155,7 @@ public class IncomeRecordCommon: CashFlowRecordCommon<IncomeRecord>
     }
 }
 
-public class ExpenseRecordCommon: CashFlowRecordCommon<ExpenseRecord>
+public class ExpenseRecordCommon: CashFlowRecordCommon<Expense>
 {
     public ExpenseRecordCommon(
         IDBConnectionFactory dBConnectionFactory,

@@ -1,42 +1,25 @@
 namespace Accountant.Models;
 
 using Accountant.Services.DB;
+using System.Collections.Generic;
 
 public interface IContext
 {
     public Task<Dictionary<string, Currency>> GetAllCurrenciesAsync();
-    public Task<Dictionary<long, IncomeType>> GetAllIncomeTypesAsync();
-    public Task<Dictionary<long, ExpenseType>> GetAllExpenseTypesAsync();
-    public Task UpdateIncomeTypeAsync(long typeID, string typeName);
-    public Task UpdateExpenseTypeAsync(long typeID, string typeName);
-    public Task AddNewIncomeTypeAsync(string typeName);
-    public Task AddNewExpenseTypeAsync(string typeName);
-    public Task DeleteIncomeTypeAsync(long typeID);
-    public Task DeleteExpenseTypeAsync(long typeID);
-    public Task<CurrencyExchangeRate?> GetExchangeRateAsync(string base_cur, string target_cur, DateTime exchange_utc);
+    public Task<Dictionary<long, CashFlowType<T>>> GetAllCashFlowTypesAsync<T>() where T : CashFlow;
+    public Task UpdateCashFlowTypeAsync<T>(CashFlowType<T> type) where T : CashFlow;
+    public Task AddNewCashFlowTypeAsync<T>(CashFlowType<T> type) where T : CashFlow;
+    public Task DeleteCashFlowTypeAsync<T>(long typeID) where T : CashFlow;
+    public Task<CurrencyExchangeRate?> GetExchangeRateAsync(CurrencyExchangeRate rateSetup);
     public Task<Dictionary<long, PaymentMethod>> GetAllMethodsAsync();
-    public Task UpdateMethodTypeAsync(long methodID, string methodName);
-    public Task AddNewMethodTypeAsync(string methodName);
+    public Task UpdateMethodTypeAsync(PaymentMethod method);
+    public Task AddNewMethodTypeAsync(PaymentMethod method);
     public Task DeleteMethodTypeAsync(long methodID);
-    public Task<ExpenseRecord?> GetExpenseRecordByIDAsync(long cashflowID);
-    public Task<IncomeRecord?> GetIncomeRecordByIDAsync(long cashflowID);
-    public Task<List<ExpenseRecord>> GetExpenseRecordsByTimeSpanAsync(DateTime startTime, DateTime endTime);
-    public Task<List<IncomeRecord>> GetIncomeRecordsByTimeSpanAsync(DateTime startTime, DateTime endTime);
-    public Task UpdateExpenseRecordByIDAsync(
-        long recordID, DateTime? happenUtc = null, float? amount = null, string? currIso = null, string? note = null, long? typeID = null, long? methodID = null
-    );
-    public Task UpdateIncomeRecordByIDAsync(
-        long recordID, DateTime? happenUtc = null, float? amount = null, string? currIso = null, string? note = null, long? typeID = null, long? methodID = null
-    );
-    public Task AddNewExpenseRecordAsync(
-        DateTime happenUtc, float amount, string currIso, long typeID, long methodID, string note = ""
-    );
-    public Task AddNewIncomeRecordAsync(
-        DateTime happenUtc, float amount, string currIso, long typeID, long methodID, string note = ""
-    );
-    public Task RemoveExpenseRecordByIDAsync(long cashflowID);
-    public Task RemoveIncomeRecordByIDAsync(long cashflowID);
-
+    public Task<CashFlowRecord<T>?> GetCashFlowRecordByIDAsync<T>(long cashflowID) where T : CashFlow;
+    public Task<List<CashFlowRecord<T>>> GetCashFlowRecordsByTimeSpanAsync<T>(DateTime startTime, DateTime endTime) where T : CashFlow;
+    public Task UpdateCashFlowRecordAsync<T>(CashFlowRecord<T> record) where T : CashFlow;
+    public Task AddNewCashFlowRecordAsync<T>(CashFlowRecord<T> record) where T : CashFlow;
+    public Task DeleteCashFlowRecordAsync<T>(long cashflowID) where T : CashFlow;
 }   
 
 public class Context: IContext
@@ -49,80 +32,64 @@ public class Context: IContext
         IsInitialized = true;
         
         _CurrencyCommon = new CurrencyCommon(dBConnectionFactory, dapperWrapperService);
-        _IncomeTypeCommon = new IncomeTypeCommon(dBConnectionFactory, dapperWrapperService);
-        _ExpenseTypeCommon = new ExpenseTypeCommon(dBConnectionFactory, dapperWrapperService);
         _ExchangeRateCommon = new ExchangeRateCommon(dBConnectionFactory, dapperWrapperService);
         _PaymentMethodCommon = new PaymentMethodCommon(dBConnectionFactory, dapperWrapperService);
-        _IncomeRecordCommon = new IncomeRecordCommon(dBConnectionFactory, dapperWrapperService);
-        _ExpenseRecordCommon = new ExpenseRecordCommon(dBConnectionFactory, dapperWrapperService);
+        
+        _CashFlowTypeCommons = new Dictionary<Type, object>
+        {
+            {typeof(Income), new IncomeTypeCommon(dBConnectionFactory, dapperWrapperService)},
+            {typeof(Expense), new ExpenseTypeCommon(dBConnectionFactory, dapperWrapperService)}
+        };
+        _CashFlowRecordCommons = new Dictionary<Type, object>
+        {
+            {typeof(Income), new IncomeRecordCommon(dBConnectionFactory, dapperWrapperService)},
+            {typeof(Expense), new ExpenseRecordCommon(dBConnectionFactory, dapperWrapperService)}
+        };
     }
 
     private static bool IsInitialized = false;
     private static CurrencyCommon? _CurrencyCommon {get; set;}
-    private static IncomeTypeCommon? _IncomeTypeCommon {get; set;}
-    private static ExpenseTypeCommon? _ExpenseTypeCommon {get; set;}
+    private static Dictionary<Type, object>? _CashFlowTypeCommons {get; set;}
+    private static Dictionary<Type, object>? _CashFlowRecordCommons {get; set;}
     private static ExchangeRateCommon? _ExchangeRateCommon {get; set;}
     private static PaymentMethodCommon? _PaymentMethodCommon {get; set;}
-    private static IncomeRecordCommon? _IncomeRecordCommon {get; set;}
-    private static ExpenseRecordCommon? _ExpenseRecordCommon {get; set;}
 
     public async Task<Dictionary<string, Currency>> GetAllCurrenciesAsync() 
         => _CurrencyCommon != null ? 
             await _CurrencyCommon.GetAllCurrenciesAsync().ConfigureAwait(false) : 
             throw new NullReferenceException("Context Not Initialized!");
 
-    public async Task<Dictionary<long, IncomeType>> GetAllIncomeTypesAsync()
-        => _IncomeTypeCommon != null ? 
-            await _IncomeTypeCommon.GetAllTypesAsync().ConfigureAwait(false) : 
-            throw new NullReferenceException("Context Not Initialized!");
-
-    public async Task<Dictionary<long, ExpenseType>> GetAllExpenseTypesAsync()
-        => _ExpenseTypeCommon != null ? 
-            await _ExpenseTypeCommon.GetAllTypesAsync().ConfigureAwait(false) : 
-            throw new NullReferenceException("Context Not Initialized!");
-
-    public async Task UpdateIncomeTypeAsync(long typeID, string typeName)
+    public async Task<Dictionary<long, CashFlowType<T>>> GetAllCashFlowTypesAsync<T>()
+    where T : CashFlow
     {
-        if (_IncomeTypeCommon == null) 
-            throw new NullReferenceException("Context Not Initialized!");
-        await _IncomeTypeCommon.UpdateTypeAsync(typeID, typeName).ConfigureAwait(false);
+        var cashFlowTypeCommon = GetCashFlowTypeCommon<T>();
+        return await cashFlowTypeCommon.GetAllTypesAsync().ConfigureAwait(false);
     }
 
-    public async Task UpdateExpenseTypeAsync(long typeID, string typeName)
+    public async Task UpdateCashFlowTypeAsync<T>(CashFlowType<T> type)
+    where T : CashFlow
     {
-        if (_ExpenseTypeCommon == null) 
-            throw new NullReferenceException("Context Not Initialized!");
-        await _ExpenseTypeCommon.UpdateTypeAsync(typeID, typeName).ConfigureAwait(false);
+        var cashFlowTypeCommon = GetCashFlowTypeCommon<T>();
+        await cashFlowTypeCommon.UpdateTypeAsync(type).ConfigureAwait(false);
     }
 
-    public async Task AddNewIncomeTypeAsync(string typeName){
-        if (_IncomeTypeCommon == null) 
-            throw new NullReferenceException("Context Not Initialized!");
-        await _IncomeTypeCommon.AddNewTypeAsync(typeName).ConfigureAwait(false);
-    }
-
-    public async Task AddNewExpenseTypeAsync(string typeName){
-        if (_ExpenseTypeCommon == null) 
-            throw new NullReferenceException("Context Not Initialized!");
-        await _ExpenseTypeCommon.AddNewTypeAsync(typeName).ConfigureAwait(false);
-    }
-
-    public async Task DeleteIncomeTypeAsync(long typeID)
+    public async Task AddNewCashFlowTypeAsync<T>(CashFlowType<T> type)
+    where T : CashFlow
     {
-        if (_IncomeTypeCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-        await _IncomeTypeCommon.DeleteTypeAsync(typeID).ConfigureAwait(false);
-    }
-    public async Task DeleteExpenseTypeAsync(long typeID)
-    {
-        if (_ExpenseTypeCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-        await _ExpenseTypeCommon.DeleteTypeAsync(typeID).ConfigureAwait(false);
+        var cashFlowTypeCommon = GetCashFlowTypeCommon<T>();
+        await cashFlowTypeCommon.AddNewTypeAsync(type).ConfigureAwait(false);
     }
 
-    public async Task<CurrencyExchangeRate?> GetExchangeRateAsync(string base_cur, string target_cur, DateTime exchange_utc)
+    public async Task DeleteCashFlowTypeAsync<T>(long typeId)
+    where T : CashFlow
+    {
+        var cashFlowTypeCommon = GetCashFlowTypeCommon<T>();
+        await cashFlowTypeCommon.DeleteTypeAsync(typeId).ConfigureAwait(false);
+    }
+
+    public async Task<CurrencyExchangeRate?> GetExchangeRateAsync(CurrencyExchangeRate rateSetup)
         => _ExchangeRateCommon != null ? 
-            await _ExchangeRateCommon.GetExchangeRateAsync(base_cur, target_cur, exchange_utc).ConfigureAwait(false) :
+            await _ExchangeRateCommon.GetExchangeRateAsync(rateSetup).ConfigureAwait(false) :
             throw new NullReferenceException("Context Not Initialized!");
 
     public async Task<Dictionary<long, PaymentMethod>> GetAllMethodsAsync()
@@ -130,149 +97,94 @@ public class Context: IContext
             await _PaymentMethodCommon.GetAllMethodsAsync().ConfigureAwait(false) :
             throw new NullReferenceException("Context Not Initialized!");
 
-    public async Task UpdateMethodTypeAsync(long methodID, string methodName)
+    public async Task UpdateMethodTypeAsync(PaymentMethod method)
     {
         if (_PaymentMethodCommon == null)
             throw new NullReferenceException("Context Not Initialized!");
-        await _PaymentMethodCommon.UpdateMethodAsync(methodID, methodName).ConfigureAwait(false);
+        await _PaymentMethodCommon.UpdateMethodAsync(method).ConfigureAwait(false);
     }
-    public async Task AddNewMethodTypeAsync(string methodName)
+    public async Task AddNewMethodTypeAsync(PaymentMethod method)
     {
         if (_PaymentMethodCommon == null)
             throw new NullReferenceException("Context Not Initialized!");
-        await _PaymentMethodCommon.AddNewMethodAsync(methodName).ConfigureAwait(false);
+        await _PaymentMethodCommon.AddNewMethodAsync(method).ConfigureAwait(false);
     }
-    public async Task DeleteMethodTypeAsync(long methodID)
+    public async Task DeleteMethodTypeAsync(long methodId)
     {
         if (_PaymentMethodCommon == null)
             throw new NullReferenceException("Context Not Initialized!");
-        await _PaymentMethodCommon.DeleteMethodAsync(methodID).ConfigureAwait(false);
+        await _PaymentMethodCommon.DeleteMethodAsync(methodId).ConfigureAwait(false);
     }
 
-    public async Task<ExpenseRecord?> GetExpenseRecordByIDAsync(long cashflowID)
+    public async Task<CashFlowRecord<T>?> GetCashFlowRecordByIDAsync<T>(long cashflowID) 
+    where T : CashFlow
     {
-        if (_ExpenseRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
+        var cashFlowRecordCommon = GetCashFlowRecordCommon<T>();
 
-        var record = await _ExpenseRecordCommon.GetRecordByIDAsync(cashflowID).ConfigureAwait(false);
-        await EnrichExpenseRecordAsync(record).ConfigureAwait(false);
-        return record;
-    }
-
-    public async Task<IncomeRecord?> GetIncomeRecordByIDAsync(long cashflowID)
-    {
-        if (_IncomeRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-
-        var record = await _IncomeRecordCommon.GetRecordByIDAsync(cashflowID).ConfigureAwait(false);
-        await EnrichIncomeRecordAsync(record).ConfigureAwait(false);
+        var record = await cashFlowRecordCommon.GetRecordByIDAsync(cashflowID).ConfigureAwait(false);
+        await EnrichCashFlowRecordAsync<T>(record).ConfigureAwait(false);
         return record;
     }
     
-    public async Task<List<ExpenseRecord>> GetExpenseRecordsByTimeSpanAsync(DateTime startTime, DateTime endTime)
+    public async Task<List<CashFlowRecord<T>>> GetCashFlowRecordsByTimeSpanAsync<T>(DateTime startTime, DateTime endTime)
+    where T : CashFlow
     {
-        if (_ExpenseRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
+        var cashFlowRecordCommon = GetCashFlowRecordCommon<T>();
 
-        var records = await _ExpenseRecordCommon.GetRecordsForTimeSpanAsync(startTime, endTime).ConfigureAwait(false);
-        foreach (var record in records) await EnrichExpenseRecordAsync(record).ConfigureAwait(false);
+        var records = await cashFlowRecordCommon.GetRecordsForTimeSpanAsync(startTime, endTime).ConfigureAwait(false);
+        foreach (var record in records) await EnrichCashFlowRecordAsync<T>(record).ConfigureAwait(false);
         return records;
     }
 
-    public async Task<List<IncomeRecord>> GetIncomeRecordsByTimeSpanAsync(DateTime startTime, DateTime endTime)
+    public async Task UpdateCashFlowRecordAsync<T>(CashFlowRecord<T> record)
+    where T : CashFlow
     {
-        if (_IncomeRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-        
-        var records = await _IncomeRecordCommon.GetRecordsForTimeSpanAsync(startTime, endTime).ConfigureAwait(false);
-        foreach (var record in records) await EnrichIncomeRecordAsync(record).ConfigureAwait(false);
-        return records;
+        var cashFlowRecordCommon = GetCashFlowRecordCommon<T>();
+        await cashFlowRecordCommon.UpdateRecordAsync(record).ConfigureAwait(false);
     }
 
-    public async Task UpdateExpenseRecordByIDAsync(
-        long recordID, DateTime? happenUtc = null, float? amount = null, string? currIso = null, string? note = null, long? typeID = null, long? methodID = null
-    )
+    public async Task AddNewCashFlowRecordAsync<T>(CashFlowRecord<T> record)
+    where T : CashFlow
     {
-        if (_ExpenseRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-        await _ExpenseRecordCommon.UpdateRecordByIDAsync(
-            recordID, happenUtc, amount, currIso, note, typeID, methodID
-        ).ConfigureAwait(false);
+        var cashFlowRecordCommon = GetCashFlowRecordCommon<T>();
+        await cashFlowRecordCommon.AddNewRecordAsync(record).ConfigureAwait(false);
     }
 
-    public async Task UpdateIncomeRecordByIDAsync(
-        long recordID, DateTime? happenUtc = null, float? amount = null, string? currIso = null, string? note = null, long? typeID = null, long? methodID = null
-    )
+    public async Task DeleteCashFlowRecordAsync<T>(long cashflowID)
+    where T : CashFlow
     {
-        if (_IncomeRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-        await _IncomeRecordCommon.UpdateRecordByIDAsync(
-            recordID, happenUtc, amount, currIso, note, typeID, methodID
-        ).ConfigureAwait(false);
+        var cashFlowRecordCommon = GetCashFlowRecordCommon<T>();
+        await cashFlowRecordCommon.RemoveRecordAsync(cashflowID).ConfigureAwait(false);
     }
 
-    public async Task AddNewExpenseRecordAsync(
-        DateTime happenUtc, float amount, string currIso, long typeID, long methodID, string note = ""
-    )
-    {
-        if (_ExpenseRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-        await _ExpenseRecordCommon.AddNewRecordAsync(
-            happenUtc, amount, currIso, typeID, methodID, note
-        ).ConfigureAwait(false);
-    }
-
-    public async Task AddNewIncomeRecordAsync(
-        DateTime happenUtc, float amount, string currIso, long typeID, long methodID, string note = ""
-    )
-    {
-        if (_IncomeRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-        await _IncomeRecordCommon.AddNewRecordAsync(
-            happenUtc, amount, currIso, typeID, methodID, note
-        ).ConfigureAwait(false);
-    }
-
-
-    public async Task RemoveExpenseRecordByIDAsync(long cashflowID)
-    {
-        if (_ExpenseRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-        await _ExpenseRecordCommon.RemoveRecordByIDAsync(cashflowID).ConfigureAwait(false);
-    }
-
-    public async Task RemoveIncomeRecordByIDAsync(long cashflowID)
-    {
-        if (_IncomeRecordCommon == null)
-            throw new NullReferenceException("Context Not Initialized!");
-        await _IncomeRecordCommon.RemoveRecordByIDAsync(cashflowID).ConfigureAwait(false);
-    }
-
-    private async Task<ExpenseRecord?> EnrichExpenseRecordAsync(ExpenseRecord? record)
+    private async Task<CashFlowRecord<T>?> EnrichCashFlowRecordAsync<T>(CashFlowRecord<T>? record)
+    where T : CashFlow
     {
         if (record == null) return null;
 
         var currencies = await this.GetAllCurrenciesAsync().ConfigureAwait(false);
         var methods = await this.GetAllMethodsAsync().ConfigureAwait(false);
-        var types = await this.GetAllExpenseTypesAsync().ConfigureAwait(false);
-        record.Curr = currencies[record.CurrIso];
-        record.Method = methods[record.MethodId];
-        record.Type = types[record.TypeId];
+        var types = await this.GetAllCashFlowTypesAsync<T>().ConfigureAwait(false);
+        record.CurrName = currencies[record.CurrIso].CurrName;
+        record.MethodName = methods[record.MethodId].MethodName;
+        record.TypeName = types[record.TypeId].TypeName;
 
         return record;
     }
-    
-    private async Task<IncomeRecord?> EnrichIncomeRecordAsync(IncomeRecord? record)
+
+    private CashFlowRecordCommon<T> GetCashFlowRecordCommon<T>()
+    where T : CashFlow
     {
-        if (record == null) return null;
+        if (_CashFlowRecordCommons == null || ! _CashFlowRecordCommons.ContainsKey(typeof(T)))
+            throw new NullReferenceException("Context Not Initialized!");
+        return (CashFlowRecordCommon<T>) _CashFlowRecordCommons[typeof(T)];
+    }
 
-        var currencies = await this.GetAllCurrenciesAsync().ConfigureAwait(false);
-        var methods = await this.GetAllMethodsAsync().ConfigureAwait(false);
-        var types = await this.GetAllIncomeTypesAsync().ConfigureAwait(false);
-        record.Curr = currencies[record.CurrIso];
-        record.Method = methods[record.MethodId];
-        record.Type = types[record.TypeId];
-
-        return record;
+    private CashFlowTypeCommon<T> GetCashFlowTypeCommon<T>()
+    where T : CashFlow
+    {
+        if (_CashFlowTypeCommons == null || ! _CashFlowTypeCommons.ContainsKey(typeof(T)))
+            throw new NullReferenceException("Context Not Initialized!");
+        return (CashFlowTypeCommon<T>) _CashFlowTypeCommons[typeof(T)];
     }
 }

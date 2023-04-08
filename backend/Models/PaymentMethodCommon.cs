@@ -60,15 +60,15 @@ public class PaymentMethodCommon
         return this.Methods;
     }
 
-    public async Task UpdateMethodAsync(long methodID, string methodName)
+    public async Task UpdateMethodAsync(PaymentMethod method)
     {
         using var connection = this.DBConnectionFactory.GetConnection();
         await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.sqlUpdate,
             param: new {
-                vmethod_id = methodID,
-                vmethod_name = methodName
+                vmethod_id = method.MethodId,
+                vmethod_name = method.MethodName
             }
         ).ConfigureAwait(false);
 
@@ -79,13 +79,13 @@ public class PaymentMethodCommon
         this.Methods = methods.ToDictionary(m => m.MethodId, m => m);
     }
 
-    public async Task AddNewMethodAsync(string methodName)
+    public async Task AddNewMethodAsync(PaymentMethod method)
     {
         using var connection = this.DBConnectionFactory.GetConnection();
         await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.sqlInsert,
-            param: new {vmethod_name = methodName}
+            param: new {vmethod_name = method.MethodName}
         ).ConfigureAwait(false);
 
         var methods = await this.DapperWrapperService.QueryAsync<PaymentMethod>(
@@ -95,13 +95,13 @@ public class PaymentMethodCommon
         this.Methods = methods.ToDictionary(m => m.MethodId, m => m);
     }
 
-    public async Task DeleteMethodAsync(long methodID)
+    public async Task DeleteMethodAsync(long methodId)
     {
         using var connection = this.DBConnectionFactory.GetConnection();
         await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.sqlDelete,
-            param: new {vmethod_id = methodID}
+            param: new {vmethod_id = methodId}
         ).ConfigureAwait(false);
 
         var methods = await this.DapperWrapperService.QueryAsync<PaymentMethod>(

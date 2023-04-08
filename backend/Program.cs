@@ -11,15 +11,13 @@ public class Program
         builder.Services.AddControllers();
         InjectServices(builder.Services);
         
-
         var app = builder.Build();
 
         var c = app.Services.GetRequiredService<IContext>();
-        // c.GetExchangeRateAsync("USD", "CNY", new DateTime(2022, 10, 20)).GetAwaiter().GetResult();
 
-        app.UseHttpsRedirection();
+        // app.UseHttpsRedirection();
         app.MapControllers();
-        app.RunAsync();
+        app.Run();
     }
 
     private static void InjectServices(IServiceCollection services){

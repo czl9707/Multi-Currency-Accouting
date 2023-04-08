@@ -1,16 +1,73 @@
 namespace Accountant.Models;
 
-public abstract class CashFlowRecord
+public interface ICashFlowRecord {}
+
+public abstract class CashFlowRecord<T> : ICashFlowRecord
+where T : CashFlow
 {
-    // For new record
-    public CashFlowRecord(
-        DateTime happenUtc,
-        float amount,
-        string currIso,
-        string note,
-        long typeId,
-        long methodId
-    )
+    // force override
+    protected CashFlowRecord(
+        DateTime happenUtc = default,
+        float amount = default,
+        string currIso = "",
+        string note = "",
+        long typeId = -1,
+        long methodId = -1
+    ){}
+
+    // force override
+    protected CashFlowRecord(){}
+
+    public long CashFlowId { get; set; }
+    public DateTime HappenUtc { get; set; }
+    public DateTime LastModifiedUtc { get; set; }
+    public float Amount { get; set; }
+    public string Note { get; set; }
+    public string CurrIso 
+    {
+        get => this.Curr.CurrIso; 
+        set => this.Curr.CurrIso = value; 
+    }
+    public string CurrName 
+    { 
+        get => this.Curr.CurrName; 
+        set => this.Curr.CurrName = value; 
+    }
+    public long TypeId
+    {
+        get => this.Type.TypeId;
+        set => this.Type.TypeId = value;
+    }
+    public string TypeName
+    {
+        get => this.Type.TypeName;
+        set => this.Type.TypeName = value;
+    }
+    public long MethodId
+    {
+        get => this.Method.MethodId;
+        set => this.Method.MethodId = value;
+    }
+    public string MethodName
+    {
+        get => this.Method.MethodName;
+        set => this.Method.MethodName = value;
+    }
+    protected Currency Curr { get; set; }
+    protected CashFlowType<T> Type { get; set; }
+    protected PaymentMethod Method { get; set; }
+}
+
+public class ExpenseRecord : CashFlowRecord<Expense>
+{
+    public ExpenseRecord(
+        DateTime happenUtc = default,
+        float amount = default,
+        string currIso = "",
+        string note = "",
+        long typeId = -1,
+        long methodId = -1
+    ) : this() 
     {
         this.HappenUtc = happenUtc;
         this.Amount = amount;
@@ -18,77 +75,53 @@ public abstract class CashFlowRecord
         this.Note = note;
         this.TypeId = typeId;
         this.MethodId = methodId;
+
+        this.CashFlowId = -1;
     }
 
-    // For record from DB
-    public CashFlowRecord(){
-        this.HappenUtc = DateTime.MinValue;
-        this.Amount = 0;
-        this.CurrIso = "";
+    public ExpenseRecord()
+    {
+        this.Curr = new Currency();
+        this.Type = new ExpenseType();
+        this.Method = new PaymentMethod();
+        this.HappenUtc = default;
+        this.Amount = default;
         this.Note = "";
-        this.TypeId = -1;
-        this.MethodId = -1;
+
+        this.CashFlowId = -1;
     }
-
-    public long? IncomeId { get; private set; }
-    public DateTime HappenUtc { get; set; }
-    public DateTime? LastModifiedUtc { get; private set; }
-    public float Amount { get; set; }
-    public string CurrIso { get; set; }
-    public string Note { get; set; }
-    public long TypeId { get; set; }
-    public long MethodId { get; set; }
-
-    // below properties should be populated by context.
-    public Currency? Curr { get; set; }
-    public CashFlowType? Type { get; set; }
-    public PaymentMethod? Method { get; set; }
 }
 
-public class ExpenseRecord : CashFlowRecord
-{
-    public ExpenseRecord(
-        DateTime happenUtc,
-        float amount,
-        string currIso,
-        string note,
-        long typeId,
-        long methodId
-    ) : base(
-        happenUtc,
-        amount,
-        currIso,
-        note,
-        typeId,
-        methodId
-    )
-    { }
-
-    public ExpenseRecord(): base(){}
-
-    public new ExpenseType? Type { get; set; }
-}
-
-public class IncomeRecord : CashFlowRecord
+public class IncomeRecord : CashFlowRecord<Income>
 {
     public IncomeRecord(
-        DateTime happenUtc,
-        float amount,
-        string currIso,
-        string note,
-        long typeId,
-        long methodId
-    ) : base(
-        happenUtc,
-        amount,
-        currIso,
-        note,
-        typeId,
-        methodId
-    )
-    { }
+        DateTime happenUtc = default,
+        float amount = default,
+        string currIso = "",
+        string note = "",
+        long typeId = -1,
+        long methodId = -1
+    ) : this() 
+    {
+        this.HappenUtc = happenUtc;
+        this.Amount = amount;
+        this.CurrIso = currIso;
+        this.Note = note;
+        this.TypeId = typeId;
+        this.MethodId = methodId;
 
-    public IncomeRecord(): base(){}
+        this.CashFlowId = -1;
+    }
 
-    public new IncomeType? Type { get; set; }
+    public IncomeRecord()
+    {
+        this.Curr = new Currency();
+        this.Type = new IncomeType();
+        this.Method = new PaymentMethod();
+        this.HappenUtc = default;
+        this.Amount = default;
+        this.Note = "";
+
+        this.CashFlowId = -1;
+    }
 }

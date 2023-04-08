@@ -8,6 +8,11 @@ public class Currency
         this.CurrName = "";
     }
 
+    public Currency(string currName): this()
+    {
+        this.CurrName = currName;
+    }
+
     public string CurrIso {get; set;}
     public string CurrName {get; set;}
 }
