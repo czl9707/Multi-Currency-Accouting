@@ -1,0 +1,14 @@
+#content_paging_zone {
+    display: flex;
+    width: 100%;
+}
+
+#content_paging {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+#content_paging div{
+    display: inline-flex;
+}

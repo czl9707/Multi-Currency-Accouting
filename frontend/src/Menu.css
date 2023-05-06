@@ -1,0 +1,41 @@
+.menu_tag {
+  display: flex;
+  position: relative;
+  align-items: center;
+  margin: 0.3em 0 0.3em 0;
+  padding: 0.3em;
+  border-radius: 0.2em;
+}
+
+.menu_tag_selected {
+  background-color: var(--main-color);
+  color: white;
+}
+
+.menu_tag_not_selected {
+  color: var(--gray-t6)
+}
+
+.menu_tag_not_selected:hover {
+  background-color: var(--main-color-t4);
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+.menu_tag p {
+  font-size: 1em;
+  width: 100%;
+  margin: 0;
+}
+
+.menu_tag i {
+  margin: 0 0.5em 0 0 ;
+}
+
+#co_lab {
+  width: 100%;
+  font-size: 2.7em;
+  font-weight: 900;
+  font-style: italic;
+  text-align: center;
+  margin: 0.5em 0 1em 0;
+}

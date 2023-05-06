@@ -12,3 +12,6 @@ frontend/.vs
 
 backend/bin
 backend/obj
+
+# frontend dependency
+frontend/node_modules

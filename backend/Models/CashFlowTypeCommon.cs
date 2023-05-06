@@ -16,6 +16,8 @@ where T: CashFlow
     {
         this.DBConnectionFactory = dBConnectionFactory;
         this.DapperWrapperService = dapperWrapperService;
+
+        this.InitTypeAsync().GetAwaiter().GetResult();
     }
 
     protected abstract string tableName {get;}
@@ -45,20 +47,13 @@ where T: CashFlow
         ";
     }
 
-    private Dictionary<long, CashFlowType<T>>? Types {get; set;}
+    private IEnumerable<CashFlowType<T>> Types {get; set;}
 
-    public async Task<Dictionary<long, CashFlowType<T>>> GetAllTypesAsync(){
-        if (this.Types is null){
-            using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-            var types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
+    public async Task<List<CashFlowType<T>>> GetAllTypesAsync() => 
+        this.Types.ToList();
 
-            this.Types = types.ToDictionary(
-                type => type.TypeId, type => type
-            );
-        }
-            
-        return this.Types;
-    }
+    public async Task<Dictionary<long, CashFlowType<T>>> GetAllTypesAsDictAsync() => 
+        this.Types.ToDictionary(type => type.TypeId, type => type);
 
     public async Task UpdateTypeAsync(CashFlowType<T> type)
     {
@@ -72,10 +67,7 @@ where T: CashFlow
             }
         );
 
-        var types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
-        this.Types = types.ToDictionary(
-            type => type.TypeId, type => type
-        );
+        await this.InitTypeAsync();
     }
 
     public async Task AddNewTypeAsync(CashFlowType<T> type)
@@ -89,10 +81,7 @@ where T: CashFlow
             }
         );
 
-        var types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
-        this.Types = types.ToDictionary(
-            type => type.TypeId, type => type
-        );
+        await this.InitTypeAsync();
     }
 
     public async Task DeleteTypeAsync(long typeId)
@@ -106,10 +95,13 @@ where T: CashFlow
             }
         );
 
-        var types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
-        this.Types = types.ToDictionary(
-            type => type.TypeId, type => type
-        );
+        await this.InitTypeAsync();
+    }
+
+    private async Task InitTypeAsync()
+    {
+        using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
+        this.Types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
     }
 }
 

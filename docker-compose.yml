@@ -3,7 +3,7 @@ services:
   db:
     image: keinos/sqlite3:latest
     volumes:
-      - ./db:/db:delegated
+      - ./db:/db
     working_dir: /db
     command: /bin/sh -c "./start_db.sh"
     user: root
@@ -14,23 +14,29 @@ services:
     volumes:
       - ./frontend:/frontend
       - ./.vscode-server:/root/.vscode-server
+    ports:
+      - "3000:3000"
     working_dir: /frontend
     environment: 
       NODE_ENV: "development"
-    command: npm start
-    
+    command: 
+      - npm
+      - start
+
   backend:
     build: ./backend
     image: backend
     volumes:
       - ./backend:/backend
-      - ./db:/db:delegated
+      - ./db:/db
       - ./.vscode-server:/root/.vscode-server
     ports:
-      - "127.0.0.1:7197:7197"
-      - "127.0.0.1:5245:5245"
+      - "7197:7197"
+      - "5245:5245"
     working_dir: /backend
     dns:
       - 8.8.8.8
-    command: sleep infinity
-    user: root
+    command: dotnet run
+
+      # - dotnet 
+      # - run

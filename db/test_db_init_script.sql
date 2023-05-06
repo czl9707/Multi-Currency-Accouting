@@ -58,6 +58,7 @@ CREATE TABLE tbl_pay_method(
 
 INSERT INTO tbl_currency (curr_iso, curr_name)
 VALUES 
+    ('UNK', 'Unknown'),
     ('USD', 'United States Dollar'),
     ('CNY', 'Renminbi'),
     ('SGD', 'Singapore dollar'),
@@ -67,7 +68,7 @@ VALUES
 
 
 INSERT INTO tbl_income_type (type_name, type_id)
-VALUES ('Unset', 0);
+VALUES ('Unknown', 0);
 INSERT INTO tbl_income_type (type_name)
 VALUES 
     ('Salary'),
@@ -75,7 +76,7 @@ VALUES
     ('Gift');
 
 INSERT INTO tbl_expense_type (type_name, type_id)
-VALUES ('Unset', 0);
+VALUES ('Unknown', 0);
 INSERT INTO tbl_expense_type (type_name)
 VALUES 
     ('Food'),
@@ -85,7 +86,7 @@ VALUES
     ('Rent');
 
 INSERT INTO tbl_pay_method (method_name, method_id)
-VALUES ('Unset', 0);
+VALUES ('Unknown', 0);
 INSERT INTO tbl_pay_method (method_name)
 VALUES 
     ('Credit Card'),

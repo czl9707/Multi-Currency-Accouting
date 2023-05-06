@@ -1,0 +1,69 @@
+#accounting_filter_zone {
+    display: inline-flex;
+    position: absolute;
+    
+    right: 0;
+    bottom: 0;
+    margin: var(--parent-padding);
+}
+
+#accounting_session_zone{
+    left: 0;
+    display: inline-flex;
+}
+
+.session_tag_selected{
+    border-bottom: 0.7px solid var(--gray-t6);
+}
+
+.accounting_record {
+    display: flex;
+    padding: 0.15em 0 0.15em 0;
+    margin: 0;
+}
+
+.accounting_record_cell {
+    padding: 0.5em 1em;
+    margin: 0;
+    
+    text-align: left;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--gray-t6);
+}
+
+.accounting_record_cell:hover::after {
+    content: attr(hint);
+    display: flow-root;
+    position: absolute;
+    z-index: 1;
+
+    
+    background-color: white;
+    color: var(--gray-t4);
+    margin-top: 0.2em;
+    padding: 0.5em;
+    border: var(--line-weight) solid var(--gray-t2);
+    box-shadow: 0.05em 0.05em 0.1em var(--gray-t2);
+    
+    animation: tooltip 1s ease;
+}
+
+@keyframes tooltip {
+    0% { opacity: 0; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+.accounting_record_header_cell {
+    padding: 0.5em 1em;
+    margin: 0;
+
+    text-align: left;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    color: var(--gray-t4);
+}
+

@@ -1,0 +1,38 @@
+#menu_div {
+  /* position: fixed; */
+  flex: 1 1;
+  min-width: 10em;
+
+  padding-left: 2em;
+  padding-right: 2em;
+  
+  margin: 0;
+  height: 100vh;
+  
+  border-right: 0.5px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0.1em 0 1em rgba(0, 0, 0, 0.06);
+  background-color: var(--main-color-t05);
+}
+
+#content_div {
+  position: relative;
+  flex: 4 1;
+  flex-basis: 3;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 0;
+  right: 0;
+  margin: 0;
+  height: 100vh;
+  width: 83%;
+
+  background-color: white;
+  --parent-padding: 2em;
+}
+
+#app_container {
+  display: flex;
+}
+

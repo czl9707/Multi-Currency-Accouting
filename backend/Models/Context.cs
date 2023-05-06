@@ -5,13 +5,13 @@ using System.Collections.Generic;
 
 public interface IContext
 {
-    public Task<Dictionary<string, Currency>> GetAllCurrenciesAsync();
-    public Task<Dictionary<long, CashFlowType<T>>> GetAllCashFlowTypesAsync<T>() where T : CashFlow;
+    public Task<List<Currency>> GetAllCurrenciesAsync();
+    public Task<List<CashFlowType<T>>> GetAllCashFlowTypesAsync<T>() where T : CashFlow;
     public Task UpdateCashFlowTypeAsync<T>(CashFlowType<T> type) where T : CashFlow;
     public Task AddNewCashFlowTypeAsync<T>(CashFlowType<T> type) where T : CashFlow;
     public Task DeleteCashFlowTypeAsync<T>(long typeID) where T : CashFlow;
     public Task<CurrencyExchangeRate?> GetExchangeRateAsync(CurrencyExchangeRate rateSetup);
-    public Task<Dictionary<long, PaymentMethod>> GetAllMethodsAsync();
+    public Task<List<PaymentMethod>> GetAllMethodsAsync();
     public Task UpdateMethodTypeAsync(PaymentMethod method);
     public Task AddNewMethodTypeAsync(PaymentMethod method);
     public Task DeleteMethodTypeAsync(long methodID);
@@ -27,10 +27,7 @@ public class Context: IContext
     public Context (
         IDBConnectionFactory dBConnectionFactory,
         IDapperWrapperService dapperWrapperService
-    ){
-        if (IsInitialized) return;
-        IsInitialized = true;
-        
+    ){        
         _CurrencyCommon = new CurrencyCommon(dBConnectionFactory, dapperWrapperService);
         _ExchangeRateCommon = new ExchangeRateCommon(dBConnectionFactory, dapperWrapperService);
         _PaymentMethodCommon = new PaymentMethodCommon(dBConnectionFactory, dapperWrapperService);
@@ -47,19 +44,18 @@ public class Context: IContext
         };
     }
 
-    private static bool IsInitialized = false;
-    private static CurrencyCommon? _CurrencyCommon {get; set;}
-    private static Dictionary<Type, object>? _CashFlowTypeCommons {get; set;}
-    private static Dictionary<Type, object>? _CashFlowRecordCommons {get; set;}
-    private static ExchangeRateCommon? _ExchangeRateCommon {get; set;}
-    private static PaymentMethodCommon? _PaymentMethodCommon {get; set;}
+    private CurrencyCommon _CurrencyCommon {get; set;}
+    private Dictionary<Type, object> _CashFlowTypeCommons {get; set;}
+    private Dictionary<Type, object> _CashFlowRecordCommons {get; set;}
+    private ExchangeRateCommon _ExchangeRateCommon {get; set;}
+    private PaymentMethodCommon _PaymentMethodCommon {get; set;}
 
-    public async Task<Dictionary<string, Currency>> GetAllCurrenciesAsync() 
+    public async Task<List<Currency>> GetAllCurrenciesAsync() 
         => _CurrencyCommon != null ? 
             await _CurrencyCommon.GetAllCurrenciesAsync().ConfigureAwait(false) : 
             throw new NullReferenceException("Context Not Initialized!");
 
-    public async Task<Dictionary<long, CashFlowType<T>>> GetAllCashFlowTypesAsync<T>()
+    public async Task<List<CashFlowType<T>>> GetAllCashFlowTypesAsync<T>()
     where T : CashFlow
     {
         var cashFlowTypeCommon = GetCashFlowTypeCommon<T>();
@@ -92,7 +88,7 @@ public class Context: IContext
             await _ExchangeRateCommon.GetExchangeRateAsync(rateSetup).ConfigureAwait(false) :
             throw new NullReferenceException("Context Not Initialized!");
 
-    public async Task<Dictionary<long, PaymentMethod>> GetAllMethodsAsync()
+    public async Task<List<PaymentMethod>> GetAllMethodsAsync()
         => _PaymentMethodCommon != null ?
             await _PaymentMethodCommon.GetAllMethodsAsync().ConfigureAwait(false) :
             throw new NullReferenceException("Context Not Initialized!");
@@ -162,9 +158,9 @@ public class Context: IContext
     {
         if (record == null) return null;
 
-        var currencies = await this.GetAllCurrenciesAsync().ConfigureAwait(false);
-        var methods = await this.GetAllMethodsAsync().ConfigureAwait(false);
-        var types = await this.GetAllCashFlowTypesAsync<T>().ConfigureAwait(false);
+        var currencies = await _CurrencyCommon.GetAllCurrenciesAsDictAsync().ConfigureAwait(false);
+        var methods = await _PaymentMethodCommon.GetAllMethodsAsDictAsync().ConfigureAwait(false);
+        var types = await this.GetCashFlowTypeCommon<T>().GetAllTypesAsDictAsync().ConfigureAwait(false);
         record.CurrName = currencies[record.CurrIso].CurrName;
         record.MethodName = methods[record.MethodId].MethodName;
         record.TypeName = types[record.TypeId].TypeName;

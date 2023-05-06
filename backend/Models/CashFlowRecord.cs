@@ -5,18 +5,34 @@ public interface ICashFlowRecord {}
 public abstract class CashFlowRecord<T> : ICashFlowRecord
 where T : CashFlow
 {
-    // force override
-    protected CashFlowRecord(
+    public CashFlowRecord(
         DateTime happenUtc = default,
         float amount = default,
         string currIso = "",
         string note = "",
         long typeId = -1,
         long methodId = -1
-    ){}
+    ): this(){
+        this.HappenUtc = happenUtc;
+        this.Amount = amount;
+        this.CurrIso = currIso;
+        this.Note = note;
+        this.TypeId = typeId;
+        this.MethodId = methodId;
 
-    // force override
-    protected CashFlowRecord(){}
+        this.CashFlowId = -1;
+    }
+
+    public CashFlowRecord(){
+        this.Curr = new Currency();
+        this.Type = new CashFlowType<T>();
+        this.Method = new PaymentMethod();
+        this.HappenUtc = default;
+        this.Amount = default;
+        this.Note = "";
+
+        this.CashFlowId = -1;
+    }
 
     public long CashFlowId { get; set; }
     public DateTime HappenUtc { get; set; }
@@ -67,29 +83,22 @@ public class ExpenseRecord : CashFlowRecord<Expense>
         string note = "",
         long typeId = -1,
         long methodId = -1
-    ) : this() 
-    {
-        this.HappenUtc = happenUtc;
-        this.Amount = amount;
-        this.CurrIso = currIso;
-        this.Note = note;
-        this.TypeId = typeId;
-        this.MethodId = methodId;
-
-        this.CashFlowId = -1;
-    }
-
-    public ExpenseRecord()
-    {
-        this.Curr = new Currency();
+    ) : base(
+        happenUtc,
+        amount,
+        note,
+        note,
+        typeId,
+        methodId
+    ){
         this.Type = new ExpenseType();
-        this.Method = new PaymentMethod();
-        this.HappenUtc = default;
-        this.Amount = default;
-        this.Note = "";
-
-        this.CashFlowId = -1;
     }
+
+    public ExpenseRecord():base(){
+        this.Type = new ExpenseType();
+    }
+
+    private new ExpenseType Type { get; set; }
 }
 
 public class IncomeRecord : CashFlowRecord<Income>
@@ -101,27 +110,21 @@ public class IncomeRecord : CashFlowRecord<Income>
         string note = "",
         long typeId = -1,
         long methodId = -1
-    ) : this() 
-    {
-        this.HappenUtc = happenUtc;
-        this.Amount = amount;
-        this.CurrIso = currIso;
-        this.Note = note;
-        this.TypeId = typeId;
-        this.MethodId = methodId;
-
-        this.CashFlowId = -1;
-    }
-
-    public IncomeRecord()
-    {
-        this.Curr = new Currency();
+    ) : base(
+        happenUtc,
+        amount,
+        currIso,
+        note,
+        typeId,
+        methodId
+    ){
         this.Type = new IncomeType();
-        this.Method = new PaymentMethod();
-        this.HappenUtc = default;
-        this.Amount = default;
-        this.Note = "";
-
-        this.CashFlowId = -1;
     }
+
+    public IncomeRecord():base(){
+        this.Type = new IncomeType();
+    }
+    
+    private new IncomeType Type { get; set; }
+
 }

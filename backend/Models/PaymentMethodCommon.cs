@@ -13,6 +13,8 @@ public class PaymentMethodCommon
     {
         this.DBConnectionFactory = dBConnectionFactory;
         this.DapperWrapperService = dapperWrapperService;
+
+        this.InitMethodAsync().GetAwaiter().GetResult();
     }
 
     private string sqlSelect 
@@ -42,23 +44,13 @@ public class PaymentMethodCommon
         ";
     }
 
-    private Dictionary<long, PaymentMethod>? Methods;
+    private IEnumerable<PaymentMethod> Methods;
 
-    public async Task<Dictionary<long, PaymentMethod>> GetAllMethodsAsync()
-    {
-        if (this.Methods is null)
-        {
-            using var connection = this.DBConnectionFactory.GetConnection();
-            var methods = await this.DapperWrapperService.QueryAsync<PaymentMethod>(
-                connection: connection, 
-                sql: this.sqlSelect
-            ).ConfigureAwait(false);
+    public async Task<List<PaymentMethod>> GetAllMethodsAsync() => 
+        this.Methods.ToList();
 
-            this.Methods = methods.ToDictionary(m => m.MethodId, m => m);
-        }
-
-        return this.Methods;
-    }
+    public async Task<Dictionary<long, PaymentMethod>> GetAllMethodsAsDictAsync() => 
+        this.Methods.ToDictionary(m => m.MethodId, m => m);
 
     public async Task UpdateMethodAsync(PaymentMethod method)
     {
@@ -72,11 +64,7 @@ public class PaymentMethodCommon
             }
         ).ConfigureAwait(false);
 
-        var methods = await this.DapperWrapperService.QueryAsync<PaymentMethod>(
-            connection: connection, 
-            sql: this.sqlSelect
-        ).ConfigureAwait(false);
-        this.Methods = methods.ToDictionary(m => m.MethodId, m => m);
+        await this.InitMethodAsync();
     }
 
     public async Task AddNewMethodAsync(PaymentMethod method)
@@ -88,11 +76,7 @@ public class PaymentMethodCommon
             param: new {vmethod_name = method.MethodName}
         ).ConfigureAwait(false);
 
-        var methods = await this.DapperWrapperService.QueryAsync<PaymentMethod>(
-            connection: connection, 
-            sql: this.sqlSelect
-        ).ConfigureAwait(false);
-        this.Methods = methods.ToDictionary(m => m.MethodId, m => m);
+        await this.InitMethodAsync();
     }
 
     public async Task DeleteMethodAsync(long methodId)
@@ -104,10 +88,14 @@ public class PaymentMethodCommon
             param: new {vmethod_id = methodId}
         ).ConfigureAwait(false);
 
-        var methods = await this.DapperWrapperService.QueryAsync<PaymentMethod>(
+        await this.InitMethodAsync();
+    }
+
+    private async Task InitMethodAsync(){
+        using var connection = this.DBConnectionFactory.GetConnection();
+        this.Methods = await this.DapperWrapperService.QueryAsync<PaymentMethod>(
             connection: connection, 
             sql: this.sqlSelect
         ).ConfigureAwait(false);
-        this.Methods = methods.ToDictionary(m => m.MethodId, m => m);
     }
 }

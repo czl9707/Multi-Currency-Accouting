@@ -1,15 +1,15 @@
 namespace Accountant.Models;
 
-public abstract class CashFlowType<T>
+public class CashFlowType<T>
 where T : CashFlow
 {
-    protected CashFlowType()
+    public CashFlowType()
     {
         this.TypeName = "";
         this.TypeId = -1;
     }
 
-    protected CashFlowType (string typeName)
+    public CashFlowType (string typeName)
     {
         this.TypeName = typeName;
         this.TypeId = -1;
