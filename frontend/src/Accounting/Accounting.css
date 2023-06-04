@@ -20,6 +20,7 @@
     display: flex;
     padding: 0.15em 0 0.15em 0;
     margin: 0;
+    box-sizing: border-box;
 }
 
 .accounting_record_cell {
@@ -38,7 +39,6 @@
     display: flow-root;
     position: absolute;
     z-index: 1;
-
     
     background-color: white;
     color: var(--gray-t4);
@@ -50,11 +50,16 @@
     animation: tooltip 1s ease;
 }
 
+#accounting_body {
+    overflow-y: auto;
+    box-sizing: border-box;    
+}
+
 @keyframes tooltip {
     0% { opacity: 0; }
     50% { opacity: 0; }
     100% { opacity: 1; }
-  }
+}
 
 .accounting_record_header_cell {
     padding: 0.5em 1em;

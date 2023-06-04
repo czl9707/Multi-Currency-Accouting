@@ -11,7 +11,7 @@ function Popup({children, name, closeHandler}){
             <div id="popup_div">
                 <div id="popup_header">
                     <p>{name}</p>
-                    <Button picture={"close"} onClickHandler={closeHandler} colored/>
+                    <Button picture="close" onClickHandler={closeHandler} colored/>
                 </div>
                 <div id="popup_body">
                     {children}

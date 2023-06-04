@@ -7,26 +7,21 @@ const HTTPMETHOD = {
     DELETE: "DELETE"
 }
 
-function useFetch(url, httpMethod, paramString)
+// Won't fetch if url is empty
+function useFetchData(url, httpMethod, paramString)
 {
     const [data, setData] = useState({});
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    if (httpMethod === HTTPMETHOD.GET) paramString = undefined;
+    
     useEffect(() => {
         async function init()
-        {
+        {   
             try {
-                if (httpMethod === HTTPMETHOD.GET) paramString = undefined;
-                const response = await fetch(url, 
-                    {
-                        method: httpMethod,
-                        header: {
-                            'Content-Type': 'application/json',
-                            "Origin": "http://localhost"
-                        },
-                        body: paramString,
-                    });
+                const response = await simpleFetch(url, httpMethod, paramString);
+                
                 if (response.ok) {
                     let json = await response.json();
                     json = json ? json : {};
@@ -40,10 +35,26 @@ function useFetch(url, httpMethod, paramString)
                 setLoading(false);
             }
         }
-         init();
-    }, []);
+        init();
+    }, [url, httpMethod, paramString]);
 
     return { data, error, loading };
 }
 
-export { useFetch, HTTPMETHOD };
+
+async function simpleFetch(url, httpMethod, paramString)
+{
+    return await fetch(
+        url, 
+        {
+            method: httpMethod,
+            headers: {
+                'Content-Type': 'application/json',
+                "Origin": "http://localhost"
+            },
+            body: paramString,
+        }
+    );
+}
+
+export { useFetchData, simpleFetch, HTTPMETHOD };

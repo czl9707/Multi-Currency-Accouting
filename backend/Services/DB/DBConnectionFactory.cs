@@ -7,7 +7,6 @@ public class DBConnectionFactory : IDBConnectionFactory
     public DBConnectionFactory(IConfiguration configuration)
     {
         connectionString = configuration.GetValue<string>("Database:ConnectionString");
-        Console.WriteLine(connectionString);
     }
 
     public string connectionString

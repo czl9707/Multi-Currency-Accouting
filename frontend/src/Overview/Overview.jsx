@@ -18,7 +18,7 @@ function Overview (){
 function OverviewHeader(){
     return (
         <>
-            <ContentTitle title={"Overview"}/>
+            <ContentTitle title="Overview"/>
         </>
     );
 }

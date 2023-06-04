@@ -1,15 +1,15 @@
-import { useNavigate } from "react-router-dom";
-import { useFetch, HTTPMETHOD} from "../Utils/useFetch"
+import React from "react";
+import { redirect  } from "react-router-dom";
+import { useFetchData, simpleFetch, HTTPMETHOD} from "../Utils/useFetch"
 
 import config from  "../config.json"
 
-function fetchWithErrorNavigate(url, httpMethod, paramString, emptyAsList)
+function UseFetchForGet(url, httpMethod, paramString, emptyAsList)
 {
-    const navigate = useNavigate();
-    const {data, error, loading} = useFetch(url, httpMethod, paramString);
+    const {data, error, loading} = useFetchData(url, httpMethod, paramString);
 
-    if ( error ) navigate("/404");
-    if (_isEmtpy(data) && emptyAsList) 
+    if ( error ) redirect("/404");  
+    if ( _isEmtpy(data) && emptyAsList ) 
     {
         var _data = []
         return {data: _data, loading, error};
@@ -17,37 +17,67 @@ function fetchWithErrorNavigate(url, httpMethod, paramString, emptyAsList)
     return {data, loading, error};
 }
 
-
-function GetRecordsByTimeSpan(cashflowType, startDate, endDate){
-    const requestUrl = `${config.server_url}/record/${cashflowType}/byTime?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
-
-    return fetchWithErrorNavigate(requestUrl, HTTPMETHOD.GET, undefined, true);
+async function UseFetchForNoneGet(url, httpMethod, paramString, finishHandler)
+{
+    try
+    {
+        const response = await simpleFetch(url, httpMethod, paramString);
+        if (! response.ok) throw response;
+    }
+    catch
+    {
+        redirect("/404"); 
+    }
+    finishHandler();
 }
 
-function AddRecord(cashflowType, record)
-{
-    const requestUrl = `${config.server_url}/record/${cashflowType}`
-    const paramString = JSON.stringify(record);
 
-    return fetchWithErrorNavigate(requestUrl, HTTPMETHOD.POST, paramString, undefined);
+function GetRecordsByTimeSpan(cashflowType, filter){
+    const requestUrl = `${config.server_url}/record/${cashflowType.toLowerCase()}/byTime?` + filter.ToQueryString();
+
+    return UseFetchForGet(requestUrl, HTTPMETHOD.GET, undefined, true);
 }
 
 function GetAllCashflowType(cashflowType){
-    const requestUrl = `${config.server_url}/type/${cashflowType}`;
+    const requestUrl = `${config.server_url}/type/${cashflowType.toLowerCase()}`;
 
-    return fetchWithErrorNavigate(requestUrl, HTTPMETHOD.GET, undefined, true);
+    return UseFetchForGet(requestUrl, HTTPMETHOD.GET, undefined, true);
 }
 
 function GetAllPaymentMethod(){
     const requestUrl = `${config.server_url}/paymentmethod`;
 
-    return fetchWithErrorNavigate(requestUrl, HTTPMETHOD.GET, undefined, true);
+    return UseFetchForGet(requestUrl, HTTPMETHOD.GET, undefined, true);
 }
 
 function GetAllCurrencies(){
     const requestUrl = `${config.server_url}/currency/all`;
 
-    return fetchWithErrorNavigate(requestUrl, HTTPMETHOD.GET, undefined, true);
+    return UseFetchForGet(requestUrl, HTTPMETHOD.GET, undefined, true);
+}
+
+function AddRecord(cashflowType, record, finishHandler)
+{
+    const requestUrl = `${config.server_url}/record/${cashflowType.toLowerCase()}`
+    const paramString = JSON.stringify(record.ToExternal());
+
+    UseFetchForNoneGet(requestUrl, HTTPMETHOD.POST, paramString, finishHandler);
+}
+
+function EditRecord(cashflowType, record, finishHandler)
+{
+    const requestUrl = `${config.server_url}/record/${cashflowType.toLowerCase()}`
+    const paramString = JSON.stringify(record.ToExternal());
+
+    UseFetchForNoneGet(requestUrl, HTTPMETHOD.PUT, paramString, finishHandler);
+}
+
+function RemoveRecord(cashflowType, record, finishHandler)
+{
+    const requestUrl = `${config.server_url}/record/${cashflowType.toLowerCase()}`
+    const paramString = JSON.stringify(record.ToExternal());
+
+    UseFetchForNoneGet(requestUrl, HTTPMETHOD.DELETE, paramString, finishHandler);
 }
 
 function _isEmtpy(object)
@@ -61,5 +91,8 @@ export {
     GetRecordsByTimeSpan,
     GetAllCashflowType,
     GetAllPaymentMethod,
-    GetAllCurrencies
+    GetAllCurrencies,
+    AddRecord,
+    EditRecord,
+    RemoveRecord,
 }

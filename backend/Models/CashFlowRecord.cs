@@ -1,8 +1,6 @@
 namespace Accountant.Models;
 
-public interface ICashFlowRecord {}
-
-public abstract class CashFlowRecord<T> : ICashFlowRecord
+public class CashFlowRecord<T>
 where T : CashFlow
 {
     public CashFlowRecord(
@@ -86,7 +84,7 @@ public class ExpenseRecord : CashFlowRecord<Expense>
     ) : base(
         happenUtc,
         amount,
-        note,
+        currIso,
         note,
         typeId,
         methodId
@@ -97,8 +95,6 @@ public class ExpenseRecord : CashFlowRecord<Expense>
     public ExpenseRecord():base(){
         this.Type = new ExpenseType();
     }
-
-    private new ExpenseType Type { get; set; }
 }
 
 public class IncomeRecord : CashFlowRecord<Income>
@@ -124,7 +120,4 @@ public class IncomeRecord : CashFlowRecord<Income>
     public IncomeRecord():base(){
         this.Type = new IncomeType();
     }
-    
-    private new IncomeType Type { get; set; }
-
 }

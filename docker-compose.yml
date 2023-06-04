@@ -36,7 +36,6 @@ services:
     working_dir: /backend
     dns:
       - 8.8.8.8
-    command: dotnet run
-
-      # - dotnet 
-      # - run
+    command:
+      - dotnet
+      - run

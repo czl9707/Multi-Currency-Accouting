@@ -24,7 +24,7 @@
 }
 
 .white_button {
-    background-color: white;
+    background-color: transparent;
     color: var(--gray-t6);
     border: 0.1px solid var(--gray-t4);
 }

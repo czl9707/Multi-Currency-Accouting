@@ -18,6 +18,7 @@ where T : CashFlow
         this.DapperWrapperService = dapperWrapperService;
     }
 
+    protected const string WhereClausePlaceholder = "WHERECLAUSEPLACEHOLDER";
     protected abstract string tableName {get;}
     protected string selectSqlById {
         get => @$"
@@ -26,6 +27,16 @@ where T : CashFlow
             WHERE cashflow_id = @vcashflow_id
         ";
     }
+
+    protected string selectSqlByTime {
+        get => @$"
+            SELECT cashflow_id, happen_utc, last_modified_utc, amount, curr_iso, note, type_id, method_id
+            FROM {tableName}
+            WHERE happen_utc <= @vend_utc AND happen_utc >= @vstart_utc {WhereClausePlaceholder}
+            ORDER BY happen_utc DESC
+        ";
+    }
+
     protected string insertSql {
         get => @$"
             INSERT INTO {tableName}
@@ -34,14 +45,7 @@ where T : CashFlow
                 (@vhappen_utc, DATETIME('now'), @vamount, @vcurr_iso, @vnote, @vtype_id, @vmethod_id )
         ";
     }
-    protected string selectSqlByTime {
-        get => @$"
-            SELECT cashflow_id, happen_utc, last_modified_utc, amount, curr_iso, note, type_id, method_id
-            FROM {tableName}
-            WHERE happen_utc <= @vend_utc AND happen_utc >= @vstart_utc
-        ";
-    }
-
+    
     protected string updateByID {
         get => @$"
             UPDATE {tableName}
@@ -80,14 +84,23 @@ where T : CashFlow
     }
 
     // startTime and endTime are inclusive. 
-    public async Task<List<CashFlowRecord<T>>> GetRecordsForTimeSpanAsync (DateTime startTime, DateTime endTime){
+    public async Task<List<CashFlowRecord<T>>> GetRecordsForTimeSpanAsync (
+        DateTime startTime, DateTime endTime, long? typeFilter, long? methodFilter, string? currencyFilter
+    ){
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
+
+        var whereClause = "";
+        if (typeFilter.HasValue) whereClause += $"AND type_id = {typeFilter.Value} ";
+        if (methodFilter.HasValue) whereClause += $"AND method_id = {methodFilter.Value}";
+        if (!String.IsNullOrEmpty(currencyFilter)) whereClause += $"AND curr_iso = {currencyFilter}";
+
         var records = await this.DapperWrapperService.QueryAsync<CashFlowRecord<T>>(
             connection: connection,
-            sql: this.selectSqlByTime,
+            sql: this.selectSqlByTime.Replace(WhereClausePlaceholder, whereClause),
             param: new {
                 vstart_utc = startTime,
-                vend_utc = endTime
+                vend_utc = endTime,
+                vextra_where_clause = whereClause
             }
         );
 
@@ -115,6 +128,7 @@ where T : CashFlow
     public async Task AddNewRecordAsync (CashFlowRecord<T> record)
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
+
         await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.insertSql,

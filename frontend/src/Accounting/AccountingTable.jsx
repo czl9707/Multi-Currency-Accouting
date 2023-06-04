@@ -1,28 +1,31 @@
 import React, { useState } from "react";
-import { DndProvider } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+
+import "./Accounting.css";
 
 import { HorizontalDivider } from "../Utils/Layout";
-import AccountingFields from "./AccountingFields";
+import { AccountingFields } from "./AccountingFields";
 import { Button } from "../Utils/Button";
 
-function AccountingTable ({records}) {
-    const [fields, setFields] = useState(AccountingFields);
+function AccountingTable ({records, popupDataProvider, editRecordClickHandler, removeRecordClickHandler}) {
+    const [fields, setFields] = useState(Object.values(AccountingFields));
 
     return (
         <>
             <AccountingHead fields={fields} setFields={setFields}/>
             <HorizontalDivider/>
-            <AccountingBody fields={fields} records={records}/>
+            <AccountingBody fields={fields} records={records} popupDataProvider={popupDataProvider}
+                editRecordClickHandler={editRecordClickHandler} removeRecordClickHandler={removeRecordClickHandler}/>
         </>
     );
 }
 
-function moveField(setFields){
+function moveFieldWrapper(setFields){
     return (from, to) => {
         setFields((fields) => {
-            let fromIndex = fields.indexOf(fields.find((f) => f.displayName === from));
-            let toIndex = fields.indexOf(fields.find((f) => f.displayName === to));
+            let fromIndex = fields.indexOf(fields.find((f) => f.title === from));
+            let toIndex = fields.indexOf(fields.find((f) => f.title === to));
             if (fromIndex === toIndex ||
                 fromIndex < 0 || fromIndex >= fields.length ||
                 toIndex < 0 || toIndex >= fields.length
@@ -43,19 +46,19 @@ function AccountingHead ({fields, setFields}){
             <div className="accounting_record">
                 <DndProvider backend={HTML5Backend}>
                     {fields.map(
-                        (field, _) => field.getTitleElement(moveField(setFields))
+                        (field, _) => field.getTitleElement(moveFieldWrapper(setFields))
                     )}
                 </DndProvider>
                 <div style={{flex:"1 1"}}></div>
-                <Button picture={"edit"} grayed transparent/>
-                <Button picture={"delete"} grayed transparent/>
+                <Button picture="edit" grayed transparent/>
+                <Button picture="delete" grayed transparent/>
             </div>
         </>
     );
 }
 
 
-function AccountingRecord ({fields, record}) {
+function AccountingRecord ({fields, record, editRecordClickHandler, removeRecordClickHandler}) {
     return (
         <> 
             <div className="accounting_record">
@@ -63,18 +66,32 @@ function AccountingRecord ({fields, record}) {
                     (field, _) => field.getDataElement(record)
                 )}
                 <div style={{flex:"1 1"}}></div>
-                <Button picture={"edit"}/>
-                <Button picture={"delete"}/>
+                <Button picture="edit" onClickHandler={editRecordClickHandler}/>
+                <Button picture="delete" onClickHandler={removeRecordClickHandler}/>
             </div>
             <HorizontalDivider/>
         </>
     );
 }
 
-function AccountingBody ({fields, records = []}){
+function AccountingBody ({fields, records = [], popupDataProvider, editRecordClickHandler, removeRecordClickHandler}){
     return (
-        <div>
-            {records.map((record, i) => <AccountingRecord fields={fields} record={record} key={i}/>)}
+        <div id="accounting_body" className="scroll_shadow">
+            {records.map((record, i) => 
+                <AccountingRecord fields={fields} record={record} key={i}
+                    editRecordClickHandler={
+                        () => {
+                            popupDataProvider(record);
+                            editRecordClickHandler();
+                        }
+                    } 
+                    removeRecordClickHandler={
+                        () => {
+                            popupDataProvider(record);
+                            removeRecordClickHandler();
+                        }
+                    }/>
+            )}
         </div>
     );
 }

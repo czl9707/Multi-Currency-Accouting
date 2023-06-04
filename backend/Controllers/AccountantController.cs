@@ -1,6 +1,7 @@
 namespace Accountant.Controllers;
 
 using Accountant.Models;
+using Accountant.Services.Middleware;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
@@ -22,9 +23,9 @@ public class AccountantController : ControllerBase
     }
     
     [HttpGet("record/{cashflowType}/byID")]
-    public async Task<IActionResult> GetExpenseRecordByID(string cashflowType, [FromQuery(Name = "ID")] long id)
+    public async Task<IActionResult> GetCashflowRecordByID(string cashflowType, [FromQuery(Name = "ID")] long id)
     {
-        if (cashflowType != "expense" && cashflowType != "income") return BadRequest("type should be expense or income!");
+        if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
         if (id < 0) return BadRequest("ID should be greater than zero!");
 
         return new JsonResult(
@@ -35,226 +36,225 @@ public class AccountantController : ControllerBase
     }
 
     [HttpGet("record/{cashflowType}/byTime")]
-    public async Task<IActionResult> GetExpenseRecordByRange(
+    public async Task<IActionResult> GetCashflowRecordByRange(
         string cashflowType, 
         [FromQuery(Name = "startDate")] DateTime startDate,
-        [FromQuery(Name = "endDate")] DateTime endDate
+        [FromQuery(Name = "endDate")] DateTime endDate,
+        [FromQuery(Name = "type")] int? typeFilter,
+        [FromQuery(Name = "method")] int? methodFilter,
+        [FromQuery(Name = "currency")] string? currencyFilter
     ){
-        if (cashflowType != "expense" && cashflowType != "income") return BadRequest("type should be expense or income!");
+        if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
 
         if (startDate == DateTime.MinValue || endDate == DateTime.MinValue)
             return BadRequest("Invalid time range!");
 
-        return new JsonResult(
-            cashflowType == "expense" ?
-                await _context.GetCashFlowRecordsByTimeSpanAsync<Expense>(startDate, endDate).ConfigureAwait(false):
-                await _context.GetCashFlowRecordsByTimeSpanAsync<Income>(startDate, endDate).ConfigureAwait(false)
-        );
+        try 
+        {
+            return new JsonResult(
+                cashflowType == "expense" ?
+                    await _context.GetCashFlowRecordsByTimeSpanAsync<Expense>(startDate, endDate, typeFilter, methodFilter, currencyFilter).ConfigureAwait(false):
+                    await _context.GetCashFlowRecordsByTimeSpanAsync<Income>(startDate, endDate, typeFilter, methodFilter, currencyFilter).ConfigureAwait(false)
+            );
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("record/{cashflowType}")]
-    public async Task<IActionResult> DeleteExpenseRecordByID(string cashflowType, [FromBody] dynamic idObject)
+    public async Task<IActionResult> DeleteCashflowRecordByID(string cashflowType)
     {
-        long id = idObject.ID;
-        if (cashflowType != "expense" && cashflowType != "income") return BadRequest("type should be expense or income!");
-        if (id < 0) return BadRequest("ID should be greater than zero!");
+        if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
 
+        long id = cashflowType == "expense" ? (await this.ParseRequestBody<ExpenseRecord>(Request).ConfigureAwait(false)).CashFlowId :
+            (await this.ParseRequestBody<IncomeRecord>(Request).ConfigureAwait(false)).CashFlowId;
+
+        if (id < 0) return BadRequest("ID should be greater than zero!");
+        
+        
         if (cashflowType == "expense") await _context.DeleteCashFlowRecordAsync<Expense>(id).ConfigureAwait(false);
         else await _context.DeleteCashFlowRecordAsync<Income>(id).ConfigureAwait(false);
-
-        return Ok($"Deleted ExpenseRecord with ID {id}");
+        return Ok($"Deleted {cashflowType} record with ID {id}");
     }
 
-    [HttpPost("record/expense")]
-    public async Task<IActionResult> AddNewExpenseRecord([FromBody] ExpenseRecord record)
+    [HttpPost("record/{cashflowType}")]
+    public async Task<IActionResult> AddNewCashflowRecord(string cashflowType)
     {
-        if (
-            record.HappenUtc == default(DateTime) ||
-            record.Amount == default(long) ||
-            record.MethodId < 0 ||
-            record.TypeId < 0 ||
-            String.IsNullOrEmpty(record.CurrIso)
-        ) 
-            return BadRequest("Missing info to create ExpenseRecord!");
+        if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
 
-        try
+        if (cashflowType == "expense")
         {
+            var record = await this.ParseRequestBody<ExpenseRecord>(Request).ConfigureAwait(false);
+            if (
+                record.HappenUtc == default(DateTime) ||
+                record.Amount == default(long) ||
+                record.MethodId < 0 ||
+                record.TypeId < 0 ||
+                String.IsNullOrEmpty(record.CurrIso)
+            ) return BadRequest("Missing info to create ExpenseRecord!");
+
             await _context.AddNewCashFlowRecordAsync<Expense>(record).ConfigureAwait(false);
         }
-        catch
+        else
         {
-            return Forbid("DB reject!");
-        }
+            var record = await this.ParseRequestBody<IncomeRecord>(Request).ConfigureAwait(false);
+            if (
+                record.HappenUtc == default(DateTime) ||
+                record.Amount == default(long) ||
+                record.MethodId < 0 ||
+                record.TypeId < 0 ||
+                String.IsNullOrEmpty(record.CurrIso)
+            ) return BadRequest("Missing info to create IncomeRecord!");
 
-        return Ok("Inserted new ExpenseRecord");
-    }
-    
-    [HttpPost("record/income")]
-    public async Task<IActionResult> AddNewIncomeRecord([FromBody] IncomeRecord record)
-    {
-        if (
-            record.HappenUtc == default(DateTime) ||
-            record.Amount == default(long) ||
-            record.MethodId < 0 ||
-            record.TypeId < 0 ||
-            String.IsNullOrEmpty(record.CurrIso)
-        ) 
-            return BadRequest("Missing info to create IncomeRecord!");
-
-        try
-        {
             await _context.AddNewCashFlowRecordAsync<Income>(record).ConfigureAwait(false);
         }
-        catch
-        {
-            return Forbid("DB reject!");
-        }
 
-        return Ok("Inserted new IncomeRecord");
+        return Ok($"Inserted new {cashflowType} record");
     }
 
-    [HttpPut("record/expense")]
-    public async Task<IActionResult> UpdateExpenseRecord([FromBody] ExpenseRecord record)
+    [HttpPut("record/{cashflowType}")]
+    public async Task<IActionResult> UpdateCashflowRecord(string cashflowType)
     {
-        if (record.CashFlowId < 0) return BadRequest("ID should be greater than zero!");
-        try 
+        if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
+
+        long cashflowId = -1;
+
+        if (cashflowType == "expense")
         {
-            await _context.UpdateCashFlowRecordAsync<Expense>(record).ConfigureAwait(false);
+            ExpenseRecord record = await this.ParseRequestBody<ExpenseRecord>(Request);
+            cashflowId = record.CashFlowId;
+            if (record.CashFlowId < 0) return BadRequest("ID should be greater than zero!");
+            try
+            {
+                await _context.UpdateCashFlowRecordAsync<Expense>(record).ConfigureAwait(false);
+            }
+            catch
+            {
+                return Forbid("DB reject!"); 
+            }
         }
-        catch
+        else
         {
-            return Forbid("DB reject!"); 
+            IncomeRecord record = await this.ParseRequestBody<IncomeRecord>(Request);
+            cashflowId = record.CashFlowId;
+            if (record.CashFlowId < 0) return BadRequest("ID should be greater than zero!");
+            try
+            {
+                await _context.UpdateCashFlowRecordAsync<Income>(record).ConfigureAwait(false);
+            }
+            catch
+            {
+                return Forbid("DB reject!"); 
+            }
         }
 
-        return Ok($"Updated ExpenseRecord with ID {record.CashFlowId}");
+        return Ok($"Updated {cashflowType} record with ID {cashflowId}");
     }
 
-    [HttpPut("record/income")]
-    public async Task<IActionResult> UpdateIncomeRecord([FromBody] IncomeRecord record)
+    [HttpGet("type/{cashflowType}")]
+    public async Task<IActionResult> GetAllCashflowTypes(string cashflowType)
     {
-        if (record.CashFlowId < 0) return BadRequest("ID should be greater than zero!");
-        try 
-        {
-            await _context.UpdateCashFlowRecordAsync<Income>(record).ConfigureAwait(false);
-        }
-        catch
-        {
-            return Forbid("DB reject!"); 
-        }
-
-        return Ok($"Updated IncomeRecord with ID {record.CashFlowId}");
-    }
-
-    [HttpGet("type/expense")]
-    public async Task<IActionResult> GetAllExpenseTypes()
-        => new JsonResult(
-            await _context.GetAllCashFlowTypesAsync<Expense>().ConfigureAwait(false)
-        );
-
-    [HttpPost("type/expense")]
-    public async Task<IActionResult> AddNewExpenseType([FromBody] ExpenseType type)
-    {
-        try
-        {
-            await _context.AddNewCashFlowTypeAsync<Expense>(type).ConfigureAwait(false);
-        }
-        catch
-        {
-            return Forbid("DB reject!"); 
-        }
-
-        return Ok("Inserted New ExpenseType!");
-    }
-
-    [HttpPut("type/expense")]
-    public async Task<IActionResult> UpdateExpenseType([FromBody] ExpenseType type)
-    {
-        if (type.TypeId < 0) return BadRequest("ID should be greater or equal than zero!");
-
-        try
-        {
-            await _context.UpdateCashFlowTypeAsync<Expense>(type).ConfigureAwait(false);
-        }
-        catch
-        {
-            return Forbid("DB reject!"); 
-        }
-
-        return Ok($"Updated ExpenseType {type.TypeId}!");
-    }
-
-    [HttpDelete("type/expense")]
-    public async Task<IActionResult> DeleteExpenseType([FromBody] dynamic idObject)
-    {
-        long typeId = idObject.ID;
-        if (typeId < 0) return BadRequest("ID should be greater or equal than zero!");
-        
-        try
-        {
-            await _context.DeleteCashFlowTypeAsync<Expense>(typeId).ConfigureAwait(false);
-        }
-        catch
-        {
-            return Forbid("DB reject!"); 
-        }
-
-        return Ok($"Updated ExpenseType {typeId}!");
-    }
-    
-    [HttpGet("type/income")]
-    public async Task<IActionResult> GetAllIncomeTypes()
-        => new JsonResult(
+        if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
+        return new JsonResult(
+            cashflowType == "expense" ?
+            await _context.GetAllCashFlowTypesAsync<Expense>().ConfigureAwait(false) :
             await _context.GetAllCashFlowTypesAsync<Income>().ConfigureAwait(false)
         );
+    }
 
-    [HttpPost("type/income")]
-    public async Task<IActionResult> AddNewIncomeType([FromBody] IncomeType type)
+        
+
+    [HttpPost("type/{cashflowType}")]
+    public async Task<IActionResult> AddNewCashflowType(string cashflowType)
     {
+        if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
+
         try
         {
-            await _context.AddNewCashFlowTypeAsync<Income>(type).ConfigureAwait(false);
+            if (cashflowType == "expense")
+            {
+                await _context.AddNewCashFlowTypeAsync<Expense>(
+                    await this.ParseRequestBody<ExpenseType>(Request).ConfigureAwait(false)
+                ).ConfigureAwait(false);
+            }
+            else
+            {
+                await _context.AddNewCashFlowTypeAsync<Income>(
+                    await this.ParseRequestBody<IncomeType>(Request).ConfigureAwait(false)
+                ).ConfigureAwait(false);
+            }
         }
         catch
         {
             return Forbid("DB reject!"); 
         }
 
-        return Ok("Inserted New IncomeType!");
+        return Ok($"Inserted New {cashflowType} type!");
     }
 
-    [HttpPut("type/income")]
-    public async Task<IActionResult> UpdateIncomeType([FromBody] IncomeType type)
+    [HttpPut("type/{cashflowType}")]
+    public async Task<IActionResult> UpdateCashflowType(string cashflowType)
     {
-        if (type.TypeId < 0) return BadRequest("ID should be greater or equal than zero!");
+        if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
 
-        try
+        long typeId = -1;
+
+        if (cashflowType == "expense")
         {
-            await _context.UpdateCashFlowTypeAsync<Income>(type).ConfigureAwait(false);
+            ExpenseType type = await this.ParseRequestBody<ExpenseType>(Request).ConfigureAwait(false);
+            typeId = type.TypeId;
+            if (type.TypeId < 0) return BadRequest("ID should be greater or equal than zero!");
+            try
+            {
+                await _context.UpdateCashFlowTypeAsync<Expense>(type).ConfigureAwait(false);
+            }
+            catch
+            {
+                return Forbid("DB reject!"); 
+            }
         }
-        catch
+        else
         {
-            return Forbid("DB reject!"); 
+            IncomeType type = await this.ParseRequestBody<IncomeType>(Request).ConfigureAwait(false);
+            typeId = type.TypeId;
+            if (type.TypeId < 0) return BadRequest("ID should be greater or equal than zero!");
+            try
+            {
+                await _context.UpdateCashFlowTypeAsync<Income>(type).ConfigureAwait(false);
+            }
+            catch
+            {
+                return Forbid("DB reject!"); 
+            }
         }
 
-        return Ok($"Updated IncomeType {type.TypeId}!");
+
+        return Ok($"Updated {cashflowType} Type {typeId}!");
     }
 
-    [HttpDelete("type/income")]
-    public async Task<IActionResult> DeleteIncomeType([FromBody] dynamic idObject)
+    [HttpDelete("type/{cashflowType}")]
+    public async Task<IActionResult> DeleteCashflowType(string cashflowType)
     {
-        long typeId = idObject.ID;
+        if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
+
+        long typeId = cashflowType == "expense" ? (await this.ParseRequestBody<ExpenseType>(Request).ConfigureAwait(false)).TypeId :
+            (await this.ParseRequestBody<IncomeType>(Request).ConfigureAwait(false)).TypeId;
+
         if (typeId < 0) return BadRequest("ID should be greater or equal than zero!");
         
         try
         {
-            await _context.DeleteCashFlowTypeAsync<Income>(typeId).ConfigureAwait(false);
+            if (cashflowType == "expense") await _context.DeleteCashFlowTypeAsync<Expense>(typeId).ConfigureAwait(false);
+            else await _context.DeleteCashFlowTypeAsync<Income>(typeId).ConfigureAwait(false);
         }
         catch
         {
             return Forbid("DB reject!"); 
         }
 
-        return Ok($"Updated IncomeType {typeId}!");
+        return Ok($"Updated {cashflowType} type {typeId}!");
     }
 
     [HttpGet("paymentmethod")]
@@ -318,4 +318,15 @@ public class AccountantController : ControllerBase
         => new JsonResult(
             await _context.GetAllCurrenciesAsync().ConfigureAwait(false)
         );
+
+    private bool IsCashFlowTypeValid(string cashflowType)
+        => ! (cashflowType != "expense" && cashflowType != "income");
+    
+    private async Task<T> ParseRequestBody<T>(HttpRequest request)
+    {
+        string requestString = await RequestBodyBuffering.GetRawBodyAsync(request);
+        
+        var body = JsonSerializer.Deserialize<T>(requestString);
+        return body ?? throw new ArgumentException("Cannot parse request body");
+    }
 }

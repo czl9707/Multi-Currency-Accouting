@@ -32,9 +32,9 @@ function PagingTags({totalPage, currentPage, setCurrentPage}){
     return (
         <div id="content_paging" >
             <div>
-                {startNumber > 0 && <Button name={"..."} grayed/>}
+                {startNumber > 0 && <Button name="..." grayed/>}
                 {[...Array(pageNumber)].map((_, i) => PageTag(currentPage, i + startNumber, setCurrentPage))}
-                {endNumber < totalPage - 1 && <Button name={"..."} grayed/>}
+                {endNumber < totalPage - 1 && <Button name="..." grayed/>}
             </div>
         </div>
     );

@@ -9,9 +9,9 @@ import "./Accounting.css";
 function AccountingSessions({currentSession, setCurrentSession}){
     return (
         <div id="accounting_session_zone">
-            <AccountingSessionTag name={"Expenditure"} sessionNum={Session.EXPENDITURE}
+            <AccountingSessionTag name={Session.EXPENDITURE} sessionNum={Session.EXPENDITURE}
             currentSession={currentSession} setCurrentSession={setCurrentSession}/>
-            <AccountingSessionTag name={"Income"} sessionNum={Session.INCOME}
+            <AccountingSessionTag name={Session.INCOME} sessionNum={Session.INCOME}
             currentSession={currentSession} setCurrentSession={setCurrentSession}/>
         </div>
     );

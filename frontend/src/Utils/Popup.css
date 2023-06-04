@@ -1,7 +1,7 @@
 #popup_div {
     position: absolute;
     width: 50%;
-    min-height: 30%;
+    min-height: 15%;
     max-height: 60%;
     left: 50%;
     top: 50%;
@@ -46,18 +46,22 @@
     margin: 0.5em 0;
 
     display: flex;
-}
-
-.popup_item label{
-    width: 35%;
-    font-size: 1.1em;
     color: var(--gray-t6);
 }
 
+.popup_item .popup_left{
+    width: 35%;
+}
+
+.popup_item .popup_right{
+    width: 65%;
+}
+
+.popup_item label{
+    font-size: 1.1em;
+}
 
 .popup_item .popup_input{
-    flex: 2 2;
-
     height: 2em;
     width: 65%;
     margin: 0;
@@ -69,9 +73,8 @@
 }
 
 .popup_item textarea {
+    border: inherit;
     padding-left: 0.3em;
     resize: none;
 }
 
-.popup_submit {
-}

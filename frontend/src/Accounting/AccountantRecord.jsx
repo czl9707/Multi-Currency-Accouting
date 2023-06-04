@@ -1,40 +1,60 @@
 class Record
 {
-    amount 
-    type 
-    currency 
-    date
-    payment 
-    note 
-
-    constructor(amount, type, currency, date, payment, note)
-    {
-        this.amount = "0";
-        this.type = "0";
-        this.currency = "0";
-        this.date = formateDate(new Date())
-        this.payment = "0";
-        this.note = "";
-        
-        this.amount = amount ? amount : this.amount;
-        this.type = type ? type : this.type;
-        this.currency = currency ? currency : this.currency;
-        this.date = date ? formateDate(date) : this.date;
-        this.payment = payment ? payment : this.payment;
-        this.note = note ? note : this.note;
+    cashFlowId;
+    amount;
+    typeId;
+    typeName;
+    currIso;
+    currName; 
+    methodId;
+    methodName;
+    note;
+    _date;
+    
+    get date (){
+        return formateDate(this._date);
     }
 
-    static FromExternal(recordFromBack)
-    {
-        return Record(
-
-        );
+    set date (value){
+        this._date = new Date(value);
     }
 
-    ToExternal(record)
+    constructor({amount, typeId, typeName, currIso, currName, _date, methodId, methodName, note, cashFlowId} = {})
+    {
+        this.cashFlowId = cashFlowId ? cashFlowId : -1;
+        this.amount = amount ? amount : "";
+        this.typeId = typeId ? typeId : 0;
+        this.currIso = currIso ? currIso : "UNK";
+        this._date = _date ? _date : new Date();
+        this.methodId = methodId ? methodId : 0;
+        this.note = note ? note : "";
+
+        this.typeName = typeName;
+        this.methodName = methodName;
+        this.currName = currName;
+    }
+
+    static FromExternal(exteral_record)
+    {        
+        let _date = new Date(exteral_record.happenUtc);
+        _date = new Date(_date.getTime() - _date.getTimezoneOffset()*60*1000);
+
+        return new Record({
+            ...exteral_record,
+            _date: _date,
+        });
+    }
+
+    ToExternal()
     {
         return {
-
+            Amount: parseFloat(this.amount),
+            TypeId: parseInt(this.typeId),
+            CurrIso: this.currIso,
+            HappenUtc: this._date,
+            MethodId: parseInt(this.methodId),
+            Note: this.note,
+            CashFlowId: parseInt(this.cashFlowId),
         }
     }
 }

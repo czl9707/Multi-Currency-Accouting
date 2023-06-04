@@ -49,7 +49,6 @@ public class ExchangeRateCommon {
         }
 
         await this.InsertExchangeRateIntoDBAsync(rate).ConfigureAwait(false);
-        Console.WriteLine("inserted");
         return rate;
     }
 
@@ -119,7 +118,7 @@ public class ExchangeRateCommon {
             );
 
         float rate = -1;
-        if (rates != null && rates.ContainsKey(rateSetup.TargetCur)){
+        if (rates.HasValues && rates.ContainsKey(rateSetup.TargetCur)){            
             rate = (float)rates[rateSetup.TargetCur];
         }
 

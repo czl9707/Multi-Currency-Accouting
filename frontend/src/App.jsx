@@ -5,7 +5,7 @@ import './App.css';
 
 import { Overview } from './Overview/Overview';
 import { Accounting } from './Accounting/Accounting';
-import { Menu } from './Menu';
+import { Menu } from './Utils/Menu';
 import { NotFound } from './NotFound/NotFound';
 
 function App() {

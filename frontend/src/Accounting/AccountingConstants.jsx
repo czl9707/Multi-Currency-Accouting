@@ -1,12 +1,22 @@
 const Session = {
-    EXPENDITURE: "expense",
-    INCOME: "income"
+    EXPENDITURE: "Expense",
+    INCOME: "Income"
 }
 
 const DndTypes = {
     HEADER: "header"
 }
 
+const HTTPMETHOD = {
+    GET: "GET",
+    POST: "POST",
+    PUT: "PUT",
+    DELETE: "DELETE"
+}
+
+
 export {
-    Session, DndTypes
+    Session, 
+    DndTypes,
+    HTTPMETHOD
 }

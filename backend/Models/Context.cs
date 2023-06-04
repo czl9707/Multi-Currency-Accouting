@@ -16,7 +16,9 @@ public interface IContext
     public Task AddNewMethodTypeAsync(PaymentMethod method);
     public Task DeleteMethodTypeAsync(long methodID);
     public Task<CashFlowRecord<T>?> GetCashFlowRecordByIDAsync<T>(long cashflowID) where T : CashFlow;
-    public Task<List<CashFlowRecord<T>>> GetCashFlowRecordsByTimeSpanAsync<T>(DateTime startTime, DateTime endTime) where T : CashFlow;
+    public Task<List<CashFlowRecord<T>>> GetCashFlowRecordsByTimeSpanAsync<T>(
+        DateTime startTime, DateTime endTime, long? typeFilter, long? methodFilter, string? currencyFilter
+    ) where T : CashFlow;
     public Task UpdateCashFlowRecordAsync<T>(CashFlowRecord<T> record) where T : CashFlow;
     public Task AddNewCashFlowRecordAsync<T>(CashFlowRecord<T> record) where T : CashFlow;
     public Task DeleteCashFlowRecordAsync<T>(long cashflowID) where T : CashFlow;
@@ -122,12 +124,22 @@ public class Context: IContext
         return record;
     }
     
-    public async Task<List<CashFlowRecord<T>>> GetCashFlowRecordsByTimeSpanAsync<T>(DateTime startTime, DateTime endTime)
-    where T : CashFlow
+    public async Task<List<CashFlowRecord<T>>> GetCashFlowRecordsByTimeSpanAsync<T>(
+        DateTime startDate, DateTime endDate, long? typeFilter, long? methodFilter, string? currencyFilter
+    ) where T : CashFlow
     {
+        if (startDate == DateTime.MinValue || endDate == DateTime.MinValue)
+            throw new ArgumentException("Invalid time range!");
+
+        await Task.WhenAll(
+            IsValidType<T>(typeFilter),
+            IsValidMethod(methodFilter),
+            IsValidCurrency(currencyFilter)
+        ).ConfigureAwait(false);
+
         var cashFlowRecordCommon = GetCashFlowRecordCommon<T>();
 
-        var records = await cashFlowRecordCommon.GetRecordsForTimeSpanAsync(startTime, endTime).ConfigureAwait(false);
+        var records = await cashFlowRecordCommon.GetRecordsForTimeSpanAsync(startDate, endDate, typeFilter, methodFilter, currencyFilter).ConfigureAwait(false);
         foreach (var record in records) await EnrichCashFlowRecordAsync<T>(record).ConfigureAwait(false);
         return records;
     }
@@ -168,6 +180,31 @@ public class Context: IContext
         return record;
     }
 
+    private async Task IsValidType<T>(long? type)
+    where T : CashFlow
+    {
+        if (!type.HasValue) return;
+        Dictionary<long, CashFlowType<T>> types = await GetCashFlowTypeCommon<T>().GetAllTypesAsDictAsync().ConfigureAwait(false);
+        if (!types.ContainsKey(type.Value))
+            throw new ArgumentException($"Type {type} is invalid");
+    }
+
+    private async Task IsValidMethod(long? method)
+    {
+        if (!method.HasValue) return;
+        var methods = await this._PaymentMethodCommon.GetAllMethodsAsDictAsync().ConfigureAwait(false);
+        if (!methods.ContainsKey(method.Value))
+            throw new ArgumentException($"Method {method} is invalid");
+    }
+
+    private async Task IsValidCurrency(string? currIso)
+    {
+        if (String.IsNullOrEmpty(currIso)) return;
+        var currencies = await this._CurrencyCommon.GetAllCurrenciesAsDictAsync().ConfigureAwait(false);
+        if (!currencies.ContainsKey(currIso!))
+            throw new ArgumentException($"Currency {currIso} is invalid");
+    }
+
     private CashFlowRecordCommon<T> GetCashFlowRecordCommon<T>()
     where T : CashFlow
     {
@@ -183,4 +220,5 @@ public class Context: IContext
             throw new NullReferenceException("Context Not Initialized!");
         return (CashFlowTypeCommon<T>) _CashFlowTypeCommons[typeof(T)];
     }
+
 }

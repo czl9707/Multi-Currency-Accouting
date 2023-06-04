@@ -1,27 +1,22 @@
 using Accountant.Models;
 using Accountant.Services.DB;
+using Accountant.Services.Middleware;
 using Microsoft.Extensions.DependencyInjection;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public async static Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         
         builder.Services.AddControllers();
         AddServices(builder.Services);
-        
+
         var app = builder.Build();
-
-        // app.UseHttpsRedirection();
-        app.Use(async (context, next) =>{
-            context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
-            await next.Invoke();
-        });
-
-        app.UseCors();
+        
+        AddMiddleWares(app);
         app.MapControllers();
-        app.Run();
+        await app.RunAsync();
     }
 
     private static void AddServices(IServiceCollection services){
@@ -42,7 +37,14 @@ public class Program
         {
             options.AddDefaultPolicy(
                 policy => {
-                    policy.WithOrigins("http://localhost");
+                    policy.WithOrigins("http://localhost")                
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
                 });
         });
+
+    private static void AddMiddleWares(IApplicationBuilder builder)
+        => builder.UseMiddleware<RepsonseCorsHeaderMiddleware>()
+            .UseMiddleware<EnableRequestBodyBufferingMiddleware>()
+            .UseCors();
 }
