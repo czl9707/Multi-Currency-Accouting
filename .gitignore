@@ -9,9 +9,14 @@ frontend/.vs
 
 
 # compiled files
-
 backend/bin
 backend/obj
 
 # frontend dependency
 frontend/node_modules
+
+# db data file
+db/Accountant.db
+
+# secrets for docker
+credential.env

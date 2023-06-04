@@ -1,6 +1,7 @@
 namespace Accountant.Models;
 
 using Accountant.Services.DB;
+using System;
 using System.Net.Http;
 using Newtonsoft.Json.Linq;
 
@@ -8,6 +9,7 @@ using Newtonsoft.Json.Linq;
 public class ExchangeRateCommon {
     private IDBConnectionFactory DbConnectionFactory;
     private IDapperWrapperService DapperWrapperService;
+    private readonly string ApiSecret;
 
     public ExchangeRateCommon(
         IDBConnectionFactory dBConnectionFactory,
@@ -16,6 +18,7 @@ public class ExchangeRateCommon {
     {
         this.DbConnectionFactory = dBConnectionFactory;
         this.DapperWrapperService = dapperWrapperService;
+        this.ApiSecret = Environment.GetEnvironmentVariable("RAPID_CURRENCY_SECRET");
     }
 
     private const string sqlSelectSingleRate = 
@@ -84,7 +87,7 @@ public class ExchangeRateCommon {
         );
     }
 
-    private static async Task<CurrencyExchangeRate> GrabExchangeRateAsync(CurrencyExchangeRate rateSetup)
+    private async Task<CurrencyExchangeRate> GrabExchangeRateAsync(CurrencyExchangeRate rateSetup)
     {
         var client = new HttpClient();
         // transfer to format 2020-10-21
@@ -96,7 +99,7 @@ public class ExchangeRateCommon {
                 $"https://currency-conversion-and-exchange-rates.p.rapidapi.com/{dateString}?base={rateSetup.BaseCur}&quotes={rateSetup.TargetCur}"
             ),
             Headers = {
-                { "X-RapidAPI-Key", "89dfb95b7cmsh5a31dc13a7b4da0p1cd15cjsn94b25d25bea2" },
+                { "X-RapidAPI-Key", this.ApiSecret },
 		        { "X-RapidAPI-Host", "currency-conversion-and-exchange-rates.p.rapidapi.com" },
             }
         };
@@ -108,7 +111,7 @@ public class ExchangeRateCommon {
         return GenerateExchangeRateFromJson(body, rateSetup);
     }
 
-    private static CurrencyExchangeRate GenerateExchangeRateFromJson(string responseBody, CurrencyExchangeRate rateSetup)
+    private CurrencyExchangeRate GenerateExchangeRateFromJson(string responseBody, CurrencyExchangeRate rateSetup)
     {
         var jobj = JObject.Parse(responseBody);
         JObject? rates = (JObject?)jobj["rates"];
