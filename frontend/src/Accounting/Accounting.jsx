@@ -34,12 +34,15 @@ function Accounting (){
 
     const popupData = useRef();
 
+    const closePopUpHandler = ()=>setPopup(POPUP_TYPE.NONE);
+
     let {data: exteralRecords, loading} = GetRecordsByTimeSpan(currentSession, filter);
     
     let totalPage = Math.max(Math.ceil(exteralRecords.length / RECORDPERPAGE), 1);
     let records = exteralRecords
         .slice(currentPage * RECORDPERPAGE, (currentPage + 1) * RECORDPERPAGE)
         .map((r, _) => Record.FromExternal(r));
+
 
     return (
         <>
@@ -59,10 +62,10 @@ function Accounting (){
                 <AccountingPaging totalPage={totalPage} currentPage={currentPage} setCurrentPage={setCurrentPage} />
             </ContentFooter>
             {loading && <LoadingMask/>}
-            {popup === POPUP_TYPE.ADD && <AddRecordPopup closeHandler={()=>setPopup(POPUP_TYPE.NONE)} cashflowType={currentSession}/>}
-            {popup === POPUP_TYPE.FILTER && <FilterPopup closeHandler={()=>setPopup(POPUP_TYPE.NONE)} cashflowType={currentSession} filter={filter} setFilter={setFilter}/>}
-            {popup === POPUP_TYPE.EDIT && <EditPopup closeHandler={()=>setPopup(POPUP_TYPE.NONE)} cashflowType={currentSession} record={popupData.current}/>}
-            {popup === POPUP_TYPE.REMOVE && <RemovePopup closeHandler={()=>setPopup(POPUP_TYPE.NONE)} cashflowType={currentSession} record={popupData.current}/>}
+            {popup === POPUP_TYPE.ADD && <AddRecordPopup closeHandler={closePopUpHandler} cashflowType={currentSession}/>}
+            {popup === POPUP_TYPE.FILTER && <FilterPopup closeHandler={closePopUpHandler} cashflowType={currentSession} filter={filter} setFilter={setFilter}/>}
+            {popup === POPUP_TYPE.EDIT && <EditPopup closeHandler={closePopUpHandler} cashflowType={currentSession} record={popupData.current}/>}
+            {popup === POPUP_TYPE.REMOVE && <RemovePopup closeHandler={closePopUpHandler} cashflowType={currentSession} record={popupData.current}/>}
         </>
     );
 }
