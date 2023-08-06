@@ -1,6 +1,7 @@
 using Accountant.Models;
 using Accountant.Services.DB;
 using Accountant.Services.Middleware;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
 public class Program
@@ -14,8 +15,17 @@ public class Program
 
         var app = builder.Build();
         
-        AddMiddleWares(app);
-        app.MapControllers();
+        UseMiddleWares(app);
+
+        app.UseExceptionHandler("/Error");
+        app.UseHsts();
+        app.UseHttpsRedirection();
+        app.UseStaticFiles();
+
+        app.UseRouting();
+        app.UseAuthorization();
+        app.UseEndpoints(x => x.MapControllers());
+
         await app.RunAsync();
     }
 
@@ -37,13 +47,14 @@ public class Program
         {
             options.AddDefaultPolicy(
                 policy => {
-                    policy.WithOrigins("http://localhost")                
+                    policy.SetIsOriginAllowed(origin => true) // allow any origin                
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .AllowCredentials();
                 });
         });
 
-    private static void AddMiddleWares(IApplicationBuilder builder)
+    private static void UseMiddleWares(IApplicationBuilder builder)
         => builder.UseMiddleware<RepsonseCorsHeaderMiddleware>()
             .UseMiddleware<EnableRequestBodyBufferingMiddleware>()
             .UseCors();

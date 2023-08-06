@@ -9,6 +9,7 @@ function Menu() {
         <p id="co_lab">CO.LAB</p>
         <Tag name="Overview" picture="home" url="/overview"/>
         <Tag name="Accounting" picture="payments" url="/accounting"/>
+        <Tag name="Customization" picture="palette" url="/customization"/>
       </div>
     );
 }

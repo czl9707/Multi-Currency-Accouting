@@ -3,14 +3,11 @@
     padding: 0.3em;
     margin: 0 0.25em 0 0.25em;
     border-radius: 0.2em;
+    border-style: none;
     
     align-items: center;
     display: inline-flex;
     position: relative;
-}
-
-.button_grayed {
-    pointer-events: none;
 }
 
 .content_button p {
@@ -18,15 +15,26 @@
     width: 100%;
     margin: 0 0.5em 0 0.5em;
 }
-  
+
 .content_button i {
     margin: 0 0 0 0 ;
+}
+
+.button_grayed {
+    pointer-events: none;
+}
+
+.button_border {
+    border: 0.1px solid var(--gray-t4);
+}
+
+.button_reverse {
+    flex-direction: row-reverse;
 }
 
 .white_button {
     background-color: transparent;
     color: var(--gray-t6);
-    border: 0.1px solid var(--gray-t4);
 }
 
 .white_button:hover {

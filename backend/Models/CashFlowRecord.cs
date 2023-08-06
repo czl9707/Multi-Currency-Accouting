@@ -6,10 +6,10 @@ where T : CashFlow
     public CashFlowRecord(
         DateTime happenUtc = default,
         float amount = default,
-        string currIso = "",
+        string currIso = Currency.UNKNOWN,
         string note = "",
-        long typeId = -1,
-        long methodId = -1
+        long typeId = CashFlowType<T>.UNKNOWN,
+        long methodId = PaymentMethod.UNKNOWN
     ): this(){
         this.HappenUtc = happenUtc;
         this.Amount = amount;
@@ -77,10 +77,10 @@ public class ExpenseRecord : CashFlowRecord<Expense>
     public ExpenseRecord(
         DateTime happenUtc = default,
         float amount = default,
-        string currIso = "",
+        string currIso = Currency.UNKNOWN,
         string note = "",
-        long typeId = -1,
-        long methodId = -1
+        long typeId = ExpenseType.UNKNOWN,
+        long methodId = PaymentMethod.UNKNOWN
     ) : base(
         happenUtc,
         amount,
@@ -102,10 +102,10 @@ public class IncomeRecord : CashFlowRecord<Income>
     public IncomeRecord(
         DateTime happenUtc = default,
         float amount = default,
-        string currIso = "",
+        string currIso = Currency.UNKNOWN,
         string note = "",
-        long typeId = -1,
-        long methodId = -1
+        long typeId = IncomeType.UNKNOWN,
+        long methodId = PaymentMethod.UNKNOWN
     ) : base(
         happenUtc,
         amount,

@@ -9,7 +9,7 @@ import {
     AddRecord, 
     EditRecord,
     RemoveRecord,
-} from "./AccountantDA";
+} from "../Utils/AccountantDA";
 import { Record } from "./AccountantRecord";
 import { AccountingFields } from "./AccountingFields";
 import { Session } from "./AccountingConstants";
@@ -22,7 +22,7 @@ function AddRecordPopup({closeHandler}){
 
     let validToAdd = record.amount !== "" && parseFloat(record.amount) > 0;
 
-    const AddRecordHandler = () => AddRecord(cashflowType, record, closeHandler);
+    const AddRecordHandler = () => AddRecord(cashflowType, record, () => closeHandler(true));
 
     function UpdateRecord(e){
         setRecord((currRecord) => {
@@ -53,15 +53,11 @@ function AddRecordPopup({closeHandler}){
                 </div>
                 <div className="popup_item">
                     <label className="popup_left" htmlFor="type">Type</label>
-                    <select className="popup_input popup_right" id="type" value={record.type} onChange={UpdateRecord}>
-                        <TypeOptions cashflowType={cashflowType} initValue={record.typeId}/>
-                    </select>
+                    <TypeSelect cashflowType={cashflowType} setType={UpdateRecord} defaultValue={record.typeId}/>
                 </div>
                 <div className="popup_item">
                     <label className="popup_left" htmlFor="currency">Currency</label>
-                    <select className="popup_input popup_right" id="currency" value={record.currency} onChange={UpdateRecord}>
-                        <CurrencyOptions initValue={record.currIso}/>
-                    </select>
+                    <CurrencySelect setCurrency={UpdateRecord} defaultValue={record.currIso}/>
                 </div>
                 <div className="popup_item">
                     <label className="popup_left" htmlFor="date">Date</label>
@@ -69,9 +65,7 @@ function AddRecordPopup({closeHandler}){
                 </div>
                 <div className="popup_item">
                     <label className="popup_left" htmlFor="method">Method</label>
-                    <select className="popup_input popup_right" id="method" value={record.method} onChange={UpdateRecord}>
-                        <MethodOptions initValue={record.methodId}/>
-                    </select>
+                    <MethodOptions setMethod={UpdateRecord} defaultValue={record.methodId}/>
                 </div>
                 <div className="popup_item">
                     <label className="popup_left" htmlFor="note">Note</label>
@@ -92,7 +86,7 @@ function AddRecordPopup({closeHandler}){
 
 function FilterPopup({closeHandler, cashflowType, filter, setFilter}){
     const [filterHolder, setfilterHolder] = useState(new AccountingFilter(filter));
-    console.log(filterHolder);
+
     function UpdateFilter(e){
         setfilterHolder((currFilter) => {
             currFilter[e.target.id] = e.target.value;
@@ -118,21 +112,15 @@ function FilterPopup({closeHandler, cashflowType, filter, setFilter}){
             </div>
             <div className="popup_item">
                 <label className="popup_left" htmlFor="type">Type</label>
-                <select className="popup_input popup_right" id="type" value={filterHolder.type} onChange={UpdateFilter}>
-                    <TypeOptions cashflowType={cashflowType} includeAll initValue={filterHolder.type}/>
-                </select>
+                <TypeSelect cashflowType={cashflowType} includeAll setType={UpdateFilter} defaultValue={filterHolder.type}/>
             </div>
             <div className="popup_item">
                 <label className="popup_left" htmlFor="method">Method</label>
-                <select className="popup_input popup_right" id="method" value={filterHolder.method} onChange={UpdateFilter}>
-                    <MethodOptions includeAll initValue={filterHolder.method}/>
-                </select>
+                <MethodOptions includeAll setMethod={UpdateFilter} defaultValue={filterHolder.method}/>
             </div>
             <div className="popup_item">
                 <label className="popup_left" htmlFor="currency">Currency</label>
-                <select className="popup_input popup_right" id="currency" value={filterHolder.currency} onChange={UpdateFilter}>
-                    <CurrencyOptions includeAll initValue={filterHolder.currency}/>
-                </select>
+                <CurrencySelect includeAll setCurrency={UpdateFilter} defaultValue={filterHolder.currency}/>
             </div>
             <div className="popup_item">
                 <div style={{flex:"1 1"}}/>
@@ -148,7 +136,7 @@ function EditPopup({closeHandler, record: rawRecord, cashflowType}){
 
     let validToAdd = record.amount !== "" && parseFloat(record.amount) > 0;
 
-    const editRecordHanlder = () => EditRecord(cashflowType, record, closeHandler);
+    const editRecordHanlder = () => EditRecord(cashflowType, record, () => closeHandler(true));
 
     function UpdateRecord(e){
         setRecord((currRecord) => {
@@ -169,15 +157,11 @@ function EditPopup({closeHandler, record: rawRecord, cashflowType}){
             </div>
             <div className="popup_item">
                 <label className="popup_left" htmlFor="type">Type</label>
-                <select className="popup_input popup_right" id="type" value={record.type} onChange={UpdateRecord}>
-                    <TypeOptions cashflowType={cashflowType} initValue={record.typeId}/>
-                </select>
+                <TypeSelect cashflowType={cashflowType} setType={UpdateRecord} defaultValue={record.typeId}/>
             </div>
             <div className="popup_item">
                 <label className="popup_left" htmlFor="currency">Currency</label>
-                <select className="popup_input popup_right" id="currency" value={record.currency} onChange={UpdateRecord}>
-                    <CurrencyOptions initValue={record.currIso}/>
-                </select>
+                <CurrencySelect setCurrency={UpdateRecord} defaultValue={record.currIso}/>
             </div>
             <div className="popup_item">
                 <label className="popup_left" htmlFor="date">Date</label>
@@ -185,16 +169,13 @@ function EditPopup({closeHandler, record: rawRecord, cashflowType}){
             </div>
             <div className="popup_item">
                 <label className="popup_left" htmlFor="method">Method</label>
-                <select className="popup_input popup_right" id="method" value={record.method} onChange={UpdateRecord}>
-                    <MethodOptions initValue={record.methodId}/>
-                </select>
+                <MethodOptions setMethod={UpdateRecord} defaultValue={record.methodId}/>
             </div>
             <div className="popup_item">
                 <label className="popup_left" htmlFor="note">Note</label>
                 <textarea className="popup_input popup_right" id="note" type="text" value={record.note} onChange={UpdateRecord}
                 style={{height:"5em"}}/>
             </div>
-
             <br/>
             <div className="popup_item">
                 <div style={{flex:"1 1"}}/>
@@ -206,7 +187,7 @@ function EditPopup({closeHandler, record: rawRecord, cashflowType}){
 }
 
 function RemovePopup({closeHandler, record, cashflowType}){
-    const removeRecordHandler = () => RemoveRecord(cashflowType, record, closeHandler);
+    const removeRecordHandler = () => RemoveRecord(cashflowType, record, () => closeHandler(true));
 
     return (
         <Popup closeHandler={closeHandler} name="Remove">
@@ -223,46 +204,70 @@ function RemovePopup({closeHandler, record, cashflowType}){
 }
 
 
-function TypeOptions({cashflowType, includeAll, initValue}){
-    const {data: types} = GetAllCashflowType(cashflowType);
-    return (
-        <>
-            {includeAll && <option value={-1} key={-1} selected={initValue == -1}> -- ALL -- </option>}
-            {types.map((type, _) =>
-                <option value={type.typeId} key={type.typeId} selected={initValue == type.typeId}>
-                    {type.typeName}
-                </option>
-            )}
-        </>
-    )
+function TypeSelect({cashflowType, includeAll, defaultValue, setType}){
+    const {data: types, loading} = GetAllCashflowType(cashflowType);
+
+    if (loading)
+    {
+        return <textarea className="popup_input popup_right" id="type" type="text"/>;
+    }
+    else
+    {
+        return (
+            <select className="popup_input popup_right" id="type" onChange={setType} defaultValue={defaultValue}>
+                {includeAll && <option value={-1} key={-1}> -- ALL -- </option>}
+                {types.map((type, _) =>
+                    <option value={type.typeId} key={type.typeId}>
+                        {type.typeName}
+                    </option>
+                )}
+            </select>
+        );
+    }
 }
 
-function MethodOptions({includeAll, initValue}){
-    const {data: methods} = GetAllPaymentMethod();
-    return (
-        <>
-            {includeAll && <option value={-1} key={-1} selected={initValue == -1}> -- ALL -- </option>}
+function MethodOptions({includeAll, defaultValue, setMethod}){
+    const {data: methods, loading} = GetAllPaymentMethod();
+
+    if (loading)
+    {
+        return <textarea className="popup_input popup_right" id="method" type="text"/>;
+    }
+    else
+    {
+        return (
+            <select className="popup_input popup_right" id="method" onChange={setMethod} defaultValue={defaultValue}>
+            {includeAll && <option value={-1} key={-1}> -- ALL -- </option>}
             {methods.map((method, _) =>
-                <option value={method.methodId} key={method.methodId} selected={initValue == method.methodId}>
+                <option value={method.methodId} key={method.methodId}>
                     {method.methodName}
                 </option>
             )}
-        </>
-    ) 
+        </select>   
+        );
+    }   
 }
 
-function CurrencyOptions({includeAll, initValue}){
-    const {data: currencies} = GetAllCurrencies();
-    return (
-        <>
-            {includeAll && <option value={"ALL"} key={"ALL"} selected={initValue == "ALL"}> -- ALL -- </option>}
-            {currencies.map((curr, _) =>
-                <option value={curr.currIso} key={curr.currIso} selected={initValue == curr.currIso}>
-                    {`${curr.currIso} (${curr.currName})`}
-                </option>
-            )}
-        </>
-    ) 
+function CurrencySelect({includeAll, defaultValue, setCurrency}){
+    const {data: currencies, loading} = GetAllCurrencies();
+
+    if (loading || currencies.length <= 0)
+    {
+        return <textarea className="popup_input popup_right" id="currency" type="text"/>
+    }
+    else
+    {
+        return (
+            <select className="popup_input popup_right" id="currency" onChange={setCurrency} defaultValue={defaultValue}>
+                {includeAll && <option value={"ALL"} key={"ALL"}> -- ALL -- </option>}
+                {currencies.map((curr, _) =>
+                    <option value={curr.currIso} key={curr.currIso}>
+                        {`${curr.currIso} (${curr.currName})`}
+                    </option>
+                )}
+            </select>        
+        );
+    }
 }
 
 export { AddRecordPopup, FilterPopup, EditPopup, RemovePopup} ;

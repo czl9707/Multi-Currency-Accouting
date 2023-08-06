@@ -7,10 +7,10 @@ RUN apt-get update &&\
     apt-get install -y \
         git \
         curl \
+        make \
+        openssl \
         iputils-ping && \
     apt-get clean
-
-RUN dotnet dev-certs https --trust
 
 WORKDIR /backend
 # RUN ["dotnet", "restore"]

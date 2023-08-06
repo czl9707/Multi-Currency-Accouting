@@ -50,8 +50,8 @@ function AccountingHead ({fields, setFields}){
                     )}
                 </DndProvider>
                 <div style={{flex:"1 1"}}></div>
-                <Button picture="edit" grayed transparent/>
-                <Button picture="delete" grayed transparent/>
+                <Button picture="edit" grayed/>
+                <Button picture="delete" grayed/>
             </div>
         </>
     );

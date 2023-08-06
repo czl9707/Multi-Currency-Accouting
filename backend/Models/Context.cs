@@ -170,12 +170,16 @@ public class Context: IContext
     {
         if (record == null) return null;
 
-        var currencies = await _CurrencyCommon.GetAllCurrenciesAsDictAsync().ConfigureAwait(false);
-        var methods = await _PaymentMethodCommon.GetAllMethodsAsDictAsync().ConfigureAwait(false);
-        var types = await this.GetCashFlowTypeCommon<T>().GetAllTypesAsDictAsync().ConfigureAwait(false);
-        record.CurrName = currencies[record.CurrIso].CurrName;
-        record.MethodName = methods[record.MethodId].MethodName;
-        record.TypeName = types[record.TypeId].TypeName;
+        Dictionary<string, Currency> currencies = await _CurrencyCommon.GetAllCurrenciesAsDictAsync().ConfigureAwait(false);
+        Dictionary<long, PaymentMethod> methods = await _PaymentMethodCommon.GetAllMethodsAsDictAsync().ConfigureAwait(false);
+        Dictionary<long, CashFlowType<T>> types = await this.GetCashFlowTypeCommon<T>().GetAllTypesAsDictAsync().ConfigureAwait(false);
+
+        var currency = currencies.ContainsKey(record.CurrIso) ? currencies[record.CurrIso] : currencies[Currency.UNKNOWN];
+        record.CurrName = currency.CurrName;
+        var method =  methods.ContainsKey(record.MethodId) ? methods[record.MethodId] : methods[PaymentMethod.UNKNOWN];
+        record.MethodName = method.MethodName;
+        var type = types.ContainsKey(record.TypeId) ? types[record.TypeId] : types[CashFlowType<T>.UNKNOWN];
+        record.TypeName = type.TypeName;
 
         return record;
     }

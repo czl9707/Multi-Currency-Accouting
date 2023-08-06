@@ -2,6 +2,7 @@ namespace Accountant.Models;
 
 public class Currency 
 {
+    public const string UNKNOWN = "UNK";
     public Currency ()
     {
         this.CurrIso = "";
