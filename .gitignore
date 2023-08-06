@@ -20,3 +20,4 @@ db/Accountant.db
 
 # secrets for docker
 credential.env
+backend/.https_cert/*

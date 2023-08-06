@@ -15,6 +15,8 @@ body {
   --main-color: rgba(152, 193, 217);
   --main-color-t6: rgba(193.2, 217.8, 232.2);
   --main-color-t4: rgba(213.8, 230.2, 239.8);
+  --main-color-t2: rgba(234.4, 242.6, 247.4);
+  --main-color-t1: rgba(237.1, 247.2, 250.25);
   --main-color-t05: rgba(249.85, 251.9, 253.1);
   --line-weight: 0.2px;
 }

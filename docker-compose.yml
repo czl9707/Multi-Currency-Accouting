@@ -33,11 +33,11 @@ services:
     ports:
       - "7197:7197"
       - "5245:5245"
+      - "443:443"
+    network_mode: "host"
     working_dir: /backend
     env_file:
       - credential.env
     dns:
       - 8.8.8.8
-    command:
-      - dotnet
-      - run
+    command: make run

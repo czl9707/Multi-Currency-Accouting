@@ -40,8 +40,8 @@ public class AccountantController : ControllerBase
         string cashflowType, 
         [FromQuery(Name = "startDate")] DateTime startDate,
         [FromQuery(Name = "endDate")] DateTime endDate,
-        [FromQuery(Name = "type")] int? typeFilter,
-        [FromQuery(Name = "method")] int? methodFilter,
+        [FromQuery(Name = "type")] long? typeFilter,
+        [FromQuery(Name = "method")] long? methodFilter,
         [FromQuery(Name = "currency")] string? currencyFilter
     ){
         if (! IsCashFlowTypeValid(cashflowType)) return BadRequest("type should be expense or income!");
@@ -205,7 +205,7 @@ public class AccountantController : ControllerBase
         {
             ExpenseType type = await this.ParseRequestBody<ExpenseType>(Request).ConfigureAwait(false);
             typeId = type.TypeId;
-            if (type.TypeId < 0) return BadRequest("ID should be greater or equal than zero!");
+            if (type.TypeId <= 0) return BadRequest("ID should be greater than zero!");
             try
             {
                 await _context.UpdateCashFlowTypeAsync<Expense>(type).ConfigureAwait(false);
@@ -219,7 +219,7 @@ public class AccountantController : ControllerBase
         {
             IncomeType type = await this.ParseRequestBody<IncomeType>(Request).ConfigureAwait(false);
             typeId = type.TypeId;
-            if (type.TypeId < 0) return BadRequest("ID should be greater or equal than zero!");
+            if (type.TypeId <= 0) return BadRequest("ID should be greater than zero!");
             try
             {
                 await _context.UpdateCashFlowTypeAsync<Income>(type).ConfigureAwait(false);
@@ -242,7 +242,7 @@ public class AccountantController : ControllerBase
         long typeId = cashflowType == "expense" ? (await this.ParseRequestBody<ExpenseType>(Request).ConfigureAwait(false)).TypeId :
             (await this.ParseRequestBody<IncomeType>(Request).ConfigureAwait(false)).TypeId;
 
-        if (typeId < 0) return BadRequest("ID should be greater or equal than zero!");
+        if (typeId <= 0) return BadRequest("ID should be greater than zero!");
         
         try
         {
@@ -281,7 +281,7 @@ public class AccountantController : ControllerBase
     [HttpPut("paymentmethod")]
     public async Task<IActionResult> UpdatePaymentMethod([FromBody] PaymentMethod method)
     {
-        if (method.MethodId < 0) return BadRequest("ID should be greater or equal than zero!");
+        if (method.MethodId <= 0) return BadRequest("ID should be greater than zero!");
 
         try
         {
@@ -296,10 +296,10 @@ public class AccountantController : ControllerBase
     }
 
     [HttpDelete("paymentmethod")]
-    public async Task<IActionResult> DeletePaymentMethod([FromBody] dynamic idObject)
+    public async Task<IActionResult> DeletePaymentMethod([FromBody] PaymentMethod method)
     {
-        long methodId = idObject.ID;
-        if (methodId < 0) return BadRequest("ID should be greater or equal than zero!");
+        long methodId = method.MethodId;
+        if (methodId <= 0) return BadRequest("ID should be greater than zero!");
         
         try
         {
@@ -326,7 +326,10 @@ public class AccountantController : ControllerBase
     {
         string requestString = await RequestBodyBuffering.GetRawBodyAsync(request);
         
-        var body = JsonSerializer.Deserialize<T>(requestString);
-        return body ?? throw new ArgumentException("Cannot parse request body");
+        var body = JsonSerializer.Deserialize<T>(
+            requestString,
+            new JsonSerializerOptions{PropertyNameCaseInsensitive = true}
+        );
+        return body ?? throw new ArgumentException("Cannot pWarse request body");
     }
 }

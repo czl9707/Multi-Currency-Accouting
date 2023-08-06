@@ -5,6 +5,7 @@ import './App.css';
 
 import { Overview } from './Overview/Overview';
 import { Accounting } from './Accounting/Accounting';
+import { Customization } from './Customization/Customization';
 import { Menu } from './Utils/Menu';
 import { NotFound } from './NotFound/NotFound';
 
@@ -25,6 +26,7 @@ function Content() {
       <Routes>
         <Route path='/overview' element={<Overview/>}/>
         <Route path='/accounting' element={<Accounting/>}/>
+        <Route path='/customization' element={<Customization/>}/>        
         <Route path="/404" element={<NotFound/>}/>
         <Route path="/*" element={<Navigate to="/overview"/>} />
       </Routes>

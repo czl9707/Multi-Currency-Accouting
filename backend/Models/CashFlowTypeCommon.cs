@@ -22,7 +22,7 @@ where T: CashFlow
 
     protected abstract string tableName {get;}
     protected string selectSql {
-        get => $"SELECT type_id, type_name AS typeName FROM {tableName}";
+        get => $"SELECT type_id, type_name FROM {tableName}";
     }
 
     protected string insertSql {
@@ -58,14 +58,14 @@ where T: CashFlow
     public async Task UpdateTypeAsync(CashFlowType<T> type)
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-        await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(
+        await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.updateSql,
             param: new {
                 vtype_id = type.TypeId,
                 vtype_name = type.TypeName 
             }
-        );
+        ).ConfigureAwait(false);
 
         await this.InitTypeAsync();
     }
@@ -73,13 +73,13 @@ where T: CashFlow
     public async Task AddNewTypeAsync(CashFlowType<T> type)
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-        await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(
+        await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.insertSql,
             param: new {
                 vtype_name = type.TypeName
             }
-        );
+        ).ConfigureAwait(false);
 
         await this.InitTypeAsync();
     }
@@ -87,13 +87,13 @@ where T: CashFlow
     public async Task DeleteTypeAsync(long typeId)
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-        await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(
+        await this.DapperWrapperService.ExecuteAsync(
             connection: connection,
             sql: this.deleteSql,
             param: new {
                 vtype_id = typeId
             }
-        );
+        ).ConfigureAwait(false);
 
         await this.InitTypeAsync();
     }
@@ -101,7 +101,10 @@ where T: CashFlow
     private async Task InitTypeAsync()
     {
         using IDbConnection connection =  this.DBConnectionFactory.GetConnection();
-        this.Types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(connection, this.selectSql);
+        this.Types = await this.DapperWrapperService.QueryAsync<CashFlowType<T>>(
+            connection, 
+            this.selectSql
+        ).ConfigureAwait(false);
     }
 }
 

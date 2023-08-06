@@ -12,7 +12,7 @@ import { AddRecordPopup, EditPopup, FilterPopup, RemovePopup } from "./Accountin
 import { LoadingMask } from "../Utils/Mask";
 
 
-import { GetRecordsByTimeSpan } from "./AccountantDA";
+import { GetRecordsByTimeSpan } from "../Utils/AccountantDA";
 
 import "./Accounting.css";
 import { Record } from "./AccountantRecord";
@@ -33,16 +33,20 @@ function Accounting (){
     const [popup, setPopup] = useState(POPUP_TYPE.NONE);
 
     const popupData = useRef();
+    const forceRefreshHelper = useRef(0);
 
-    const closePopUpHandler = ()=>setPopup(POPUP_TYPE.NONE);
+    const closePopUpHandler = (forceRefresh = false) => 
+    {
+        setPopup(POPUP_TYPE.NONE);
+        if (forceRefresh) forceRefreshHelper.current ++;
+    }
 
-    let {data: exteralRecords, loading} = GetRecordsByTimeSpan(currentSession, filter);
+    let {data: exteralRecords, loading} = GetRecordsByTimeSpan(currentSession, filter, forceRefreshHelper.current);
     
     let totalPage = Math.max(Math.ceil(exteralRecords.length / RECORDPERPAGE), 1);
     let records = exteralRecords
         .slice(currentPage * RECORDPERPAGE, (currentPage + 1) * RECORDPERPAGE)
         .map((r, _) => Record.FromExternal(r));
-
 
     return (
         <>
